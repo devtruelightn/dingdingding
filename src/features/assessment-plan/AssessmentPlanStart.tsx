@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   Check,
   ChevronRight,
@@ -33,6 +33,13 @@ interface AssessmentPlanStartProps {
   onResultFile?: (file: File) => Promise<void>;
   /** 수행평가 정리 파일을 골랐을 때. 고등학교에서만 넘어온다. */
   onPerformanceFile?: (file: File) => Promise<void>;
+  /**
+   * 이 학교급에 성취기준 데이터가 있는지. 없으면 성취기준을 쓰는 선택지
+   * (평가계획·직접 설정·평가결과)를 감추고 수행평가만 남긴다.
+   */
+  standardsAvailable?: boolean;
+  /** 성취기준이 없는 학교급에 띄울 안내. */
+  children?: ReactNode;
   toast: (message: string) => void;
 }
 
@@ -45,6 +52,8 @@ export function AssessmentPlanStart({
   onSavePlan,
   onResultFile,
   onPerformanceFile,
+  standardsAvailable = true,
+  children,
   toast,
 }: AssessmentPlanStartProps) {
   const [rows, setRowsState] = useState<AssessmentPlanRow[]>([]);
@@ -147,9 +156,16 @@ export function AssessmentPlanStart({
       <div
         className={cn(
           "mt-4 grid gap-3.5",
-          onPerformanceFile ? "sm:grid-cols-2 lg:grid-cols-4" : onResultFile ? "sm:grid-cols-3" : "sm:grid-cols-2",
+          !standardsAvailable
+            ? "sm:grid-cols-1"
+            : onPerformanceFile
+              ? "sm:grid-cols-2 lg:grid-cols-4"
+              : onResultFile
+                ? "sm:grid-cols-3"
+                : "sm:grid-cols-2",
         )}
       >
+        {standardsAvailable && (
         <button
           type="button"
           aria-pressed={mode === "plan"}
@@ -168,6 +184,8 @@ export function AssessmentPlanStart({
           </span>
           {mode === "plan" && <Check size={16} className="ml-auto text-primary" />}
         </button>
+        )}
+        {standardsAvailable && (
         <button
           type="button"
           aria-pressed={mode === "manual"}
@@ -189,7 +207,8 @@ export function AssessmentPlanStart({
           </span>
           {mode === "manual" && <Check size={16} className="ml-auto text-primary" />}
         </button>
-        {onResultFile && (
+        )}
+        {standardsAvailable && onResultFile && (
         <button
           type="button"
           aria-pressed={mode === "result"}
@@ -262,6 +281,8 @@ export function AssessmentPlanStart({
           </div>
         </div>
       )}
+
+      {!standardsAvailable && children}
 
       {mode === "result" && onResultFile && (
         <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">

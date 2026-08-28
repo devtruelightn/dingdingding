@@ -1,11 +1,18 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
+import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
-import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import {
+  defaultSelectionFor,
+  hasCurriculumFor,
+  officialLevelFor,
+  schoolLevelsFor,
+  standards,
+} from "@/lib/curriculum";
 import {
   analyzeAssessmentResults,
   analyzePerformanceFile,
@@ -94,15 +101,21 @@ function StepNav({
 export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSubjectProps) {
   // 초등은 "평어", 중·고등은 "과세특"으로 부른다.
   const menuLabel = subjectMenuLabel(profile.schoolLevel);
+  // 진입 흐름에서 고른 학교급·학년이 그대로 첫 선택값이 된다.
+  const initial = useMemo(
+    () => defaultSelectionFor(profile.schoolLevel, profile.grade),
+    [profile.schoolLevel, profile.grade],
+  );
+  const standardsReady = hasCurriculumFor(profile.schoolLevel);
   const [step, setStep] = useState(1);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const regenerationSeed = useRef(0);
   const sentenceHistory = useRef<string[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [grade, setGrade] = useState(3);
+  const [grade, setGrade] = useState(initial.grade);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
-  const [subject, setSubject] = useState("국어");
-  const [area, setArea] = useState("듣기·말하기");
+  const [subject, setSubject] = useState(initial.subject);
+  const [area, setArea] = useState(initial.area);
   const [standardId, setStandardId] = useState("");
   const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, SchoolLevel>>({});
@@ -624,8 +637,11 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
             onPerformanceFile={
               profile.schoolLevel === "high" ? usePerformanceFile : undefined
             }
+            standardsAvailable={standardsReady}
             toast={toast}
-          />
+          >
+            <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
+          </AssessmentPlanStart>
           {planMode !== "choose" && (planMode === "manual" || selectedStandards.length > 0) && (
             <div className="mt-6 border-t border-line pt-6">
               <div className="mb-3 flex items-center gap-3">
@@ -661,6 +677,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                     </div>
                   </div>
                   <CurriculumPicker
+                    schoolLevel={profile.schoolLevel}
                     {...{ grade, setGrade, subject, setSubject, area, setArea, standardId, setStandardId }}
                   />
                   <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between">

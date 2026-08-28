@@ -1,14 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Clipboard, Download, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
+import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, GlassPanel, PageHeading, Segmented } from "@/components/ui";
 import {
   AssessmentPlanStart,
   type PlanSetupMode,
 } from "@/features/assessment-plan";
-import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import {
+  defaultSelectionFor,
+  hasCurriculumFor,
+  officialLevelFor,
+  schoolLevelsFor,
+  standards,
+} from "@/lib/curriculum";
 import { analyzePerformanceFile, type PerformanceRow } from "@/lib/files";
 import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
@@ -46,11 +53,17 @@ const lengthOptions = ["간결하게", "기본", "자세하게"] as const;
 export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSubjectProps) {
   // 초등은 "평어", 중·고등은 "과세특"으로 부른다.
   const menuLabel = subjectMenuLabel(profile.schoolLevel);
+  // 진입 흐름에서 고른 학교급·학년이 그대로 첫 선택값이 된다.
+  const initial = useMemo(
+    () => defaultSelectionFor(profile.schoolLevel, profile.grade),
+    [profile.schoolLevel, profile.grade],
+  );
+  const standardsReady = hasCurriculumFor(profile.schoolLevel);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
-  const [grade, setGrade] = useState(3);
+  const [grade, setGrade] = useState(initial.grade);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
-  const [subject, setSubject] = useState("국어");
-  const [area, setArea] = useState("듣기·말하기");
+  const [subject, setSubject] = useState(initial.subject);
+  const [area, setArea] = useState(initial.area);
   const [standardId, setStandardId] = useState("");
   const [length, setLength] = useState<string>("기본");
   const [counts, setCounts] = useState<Record<string, number>>({ 잘함: 3, 보통: 2, 노력요함: 1 });
@@ -308,8 +321,11 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
           onPerformanceFile={
             profile.schoolLevel === "high" ? usePerformanceFile : undefined
           }
+          standardsAvailable={standardsReady}
           toast={toast}
-        />
+        >
+          <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
+        </AssessmentPlanStart>
         {planMode !== "choose" && (planMode === "manual" || planStandards.length > 0) && (
           <div className="mt-6 border-t border-line pt-6">
             <div className="mb-3 flex items-center gap-3">
@@ -349,6 +365,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
               </label>
             ) : (
               <CurriculumPicker
+                schoolLevel={profile.schoolLevel}
                 {...{ grade, setGrade, subject, setSubject, area, setArea, standardId, setStandardId }}
               />
             )}
