@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { Clipboard, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
@@ -20,6 +20,7 @@ import type {
   SchoolLevel,
   Student,
 } from "@/types";
+import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 /**
@@ -94,7 +95,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
   const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, SchoolLevel>>({});
   const [results, setResults] = useState<GeneratedSentence[]>([]);
-  const [studentEdits, setStudentEdits] = useState<Record<string, string>>({});
+  const [summary, setSummary] = useState<Record<string, string>>({});
 
   const selectedStandards = selectedStandardIds
     .map((id) => standards.find((item) => item.standardId === id))
@@ -128,7 +129,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     setStandardId(first.standardId);
     setRatings({});
     setResults([]);
-    setStudentEdits({});
+    setSummary({});
     // 잘린 이유가 학년군 때문인지 개수 상한 때문인지 구분해서 알린다.
     const sameBand = selected.filter((item) => item.gradeBand === gradeBand).length;
     if (sameBand > MAX_STANDARDS) {
@@ -159,7 +160,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
       Object.fromEntries(Object.entries(items).filter(([key]) => !key.endsWith(`::${id}`))),
     );
     setResults((items) => items.filter((item) => item.standardId !== id));
-    setStudentEdits({});
+    setSummary({});
   };
 
   const updateResult = (id: string, patch: Partial<GeneratedSentence>) =>
@@ -168,30 +169,16 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     await navigator.clipboard.writeText(value);
     toast("클립보드에 복사했습니다.");
   };
-  /** 한 학생의 여러 과목 평어를 한 칸에 이어 붙인다 (교사 수정본 우선). */
-  const studentText = (studentId: string) =>
-    studentEdits[studentId] ??
-    results
-      .filter((item) => item.studentId === studentId)
-      .map((item) => item.sentence)
-      .join(" ");
-
-  /** 한 학생의 모든 문장을 다시 생성하고 그 학생 수정본을 초기화한다. */
-  const regenerateStudent = async (student: Student) => {
-    const items = results.filter((item) => item.studentId === student.id);
-    for (let index = 0; index < items.length; index += 1) {
-      const item = items[index];
-      const selectedStandard = selectedStandards.find(
-        (current) => current.standardId === item.standardId,
-      );
-      if (!selectedStandard) continue;
-      await regenerate(item, selectedStandard, student.number * 31 + index);
-    }
-    setStudentEdits((prev) => {
-      const next = { ...prev };
-      delete next[student.id];
-      return next;
+  const makeSummaries = () => {
+    const next: Record<string, string> = {};
+    students.forEach((student) => {
+      next[student.id] = results
+        .filter((item) => item.studentId === student.id)
+        .map((item) => item.sentence)
+        .join(" ");
     });
+    setSummary(next);
+    toast("학생별 여러 과목 평어를 선택한 기준 순서대로 연결했습니다.");
   };
 
   const generate = async () => {
@@ -233,7 +220,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     if (!created.length) return toast("평가단계를 한 칸 이상 입력해 주세요.");
     sentenceHistory.current = usedDrafts;
     setResults(created);
-    setStudentEdits({});
+    setSummary({});
     setStep(4);
 
     const studentCount = new Set(created.map((item) => item.studentId)).size;
@@ -623,53 +610,91 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
           >
             ← 평가 입력으로
           </button>
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">학생별 평어</h2>
-            <p className="mt-1 text-muted">
-              {new Set(results.map((item) => item.studentId)).size}명 · 학생마다 여러 과목 평어를 한
-              칸에 이어 붙였습니다. 바로 수정해서 복사하세요.
-            </p>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold">학생별 평어 검토</h2>
+              <p className="mt-1 text-muted">
+                {new Set(results.map((item) => item.studentId)).size}명 · {results.length}개 문장 ·
+                교사가 수정한 문장은 자동으로 잠깁니다.
+              </p>
+            </div>
+            <Button variant="primary" onClick={makeSummaries}>
+              <BookOpen size={17} /> 학기말 종합의견
+            </Button>
           </div>
           <div className="flex flex-col gap-3">
             {students.map((student) => {
               const studentItems = results.filter((item) => item.studentId === student.id);
               if (!studentItems.length) return null;
-              const text = studentText(student.id);
               return (
                 <div
                   key={student.id}
-                  className="grid items-start gap-3 sm:grid-cols-[120px_1fr_auto]"
+                  className="grid gap-3 rounded-2xl border border-line bg-card p-3 sm:grid-cols-[110px_1fr]"
                 >
-                  <div className="flex flex-col">
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-primary-soft p-2 text-center">
                     <b>{student.number}번</b>
-                    <span className="text-[10px] text-muted">
-                      {text.length}자 · {utf8Bytes(text)}바이트
-                    </span>
+                    <small className="mt-1 text-[10px] text-muted">
+                      {studentItems.length}개 평어
+                    </small>
                   </div>
-                  <textarea
-                    className="min-h-[96px] leading-relaxed"
-                    value={text}
-                    aria-label={`${student.number}번 평어`}
-                    onChange={(event) =>
-                      setStudentEdits((prev) => ({ ...prev, [student.id]: event.target.value }))
-                    }
-                  />
-                  <div className="flex gap-1.5 sm:flex-col">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void regenerateStudent(student)}
-                    >
-                      <RefreshCw size={14} /> 다시 생성
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => copy(text)}>
-                      <Clipboard size={14} /> 복사
-                    </Button>
+                  <div className="flex min-w-0 flex-col gap-2.5">
+                    {studentItems.map((item, index) => {
+                      const selectedStandard = selectedStandards.find(
+                        (current) => current.standardId === item.standardId,
+                      );
+                      if (!selectedStandard) return null;
+                      return (
+                        <SentenceEditor
+                          key={item.id}
+                          item={item}
+                          standard={selectedStandard}
+                          onChange={(patch) => updateResult(item.id, patch)}
+                          onRegenerate={() =>
+                            void regenerate(item, selectedStandard, index + student.number * 31)
+                          }
+                          onCopy={() => copy(item.sentence)}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               );
             })}
           </div>
+          {Object.keys(summary).length > 0 && (
+            <div className="mt-6 rounded-2xl border border-line bg-card p-6">
+              <h2 className="text-xl font-bold">학기말 종합의견</h2>
+              <p className="text-xs text-muted">
+                새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다.
+              </p>
+              {students
+                .filter((student) => summary[student.id])
+                .map((student) => (
+                  <div
+                    key={student.id}
+                    className="mt-3 grid items-center gap-2.5 sm:grid-cols-[140px_1fr_auto]"
+                  >
+                    <div className="flex flex-col">
+                      <b>{student.number}번</b>
+                      <span className="text-[10px] text-muted">
+                        {summary[student.id].length}자 · {utf8Bytes(summary[student.id])}바이트
+                      </span>
+                    </div>
+                    <textarea
+                      className="min-h-[88px]"
+                      value={summary[student.id]}
+                      aria-label={`${student.number}번 학기말 종합의견`}
+                      onChange={(event) =>
+                        setSummary({ ...summary, [student.id]: event.target.value })
+                      }
+                    />
+                    <Button variant="ghost" size="sm" onClick={() => copy(summary[student.id])}>
+                      복사
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          )}
         </section>
       )}
     </div>
