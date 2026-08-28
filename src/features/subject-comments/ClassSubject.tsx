@@ -7,6 +7,7 @@ import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
 import { analyzeAssessmentResults } from "@/lib/files";
+import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import {
   createUniqueGroundedSentence,
@@ -86,6 +87,8 @@ function StepNav({
 
 /** 명단 × 여러 성취기준 평가표로 학생별 평어를 한 번에 작성하는 화면. */
 export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSubjectProps) {
+  // 초등은 "평어", 중·고등은 "과세특"으로 부른다.
+  const menuLabel = subjectMenuLabel(profile.schoolLevel);
   const [step, setStep] = useState(1);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const regenerationSeed = useRef(0);
@@ -370,7 +373,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
       }
     }
     sentenceHistory.current = [...sentenceHistory.current, ...accepted];
-    toast("우리 반 평어의 AI 생성과 검증을 마쳤습니다.");
+    toast(`우리 반 ${menuLabel}의 AI 생성과 검증을 마쳤습니다.`);
   };
 
   const regenerate = async (
@@ -551,7 +554,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 평어</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 {menuLabel}</h1>
 
       {step === 1 && (
         <GlassPanel>

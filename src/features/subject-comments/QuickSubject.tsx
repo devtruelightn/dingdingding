@@ -9,6 +9,7 @@ import {
   type PlanSetupMode,
 } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import { downloadText } from "@/lib/download";
 import { cn } from "@/lib/cn";
@@ -40,6 +41,8 @@ const lengthOptions = ["간결하게", "기본", "자세하게"] as const;
 
 /** 학생 명단 없이 성취기준별 평어 묶음을 만드는 화면. */
 export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSubjectProps) {
+  // 초등은 "평어", 중·고등은 "과세특"으로 부른다.
+  const menuLabel = subjectMenuLabel(profile.schoolLevel);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const [grade, setGrade] = useState(3);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
@@ -249,8 +252,8 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
   return (
     <div className="mx-auto max-w-[1120px]">
       <PageHeading
-        eyebrow="교과평어"
-        title="평어 빠른 생성"
+        eyebrow={`교과${menuLabel}`}
+        title={`${menuLabel} 빠른 생성`}
         description="학생 명단 없이 성취기준별 문장 묶음을 만듭니다."
         icon={WandSparkles}
       />

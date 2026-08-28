@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  Eye,
-  EyeOff,
-  HelpCircle,
-  LogIn,
-  LogOut,
-  Menu,
-  Moon,
-  RefreshCw,
-  Save,
-} from "lucide-react";
+import { HelpCircle, LogIn, LogOut, Menu, Moon, RefreshCw } from "lucide-react";
 import { Button, IconButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { User } from "@/lib/firebase";
@@ -19,12 +9,9 @@ type SaveState = "saved" | "saving" | "offline";
 
 interface TopbarProps {
   saveState: SaveState;
-  privacy: boolean;
-  onTogglePrivacy: () => void;
   onOpenMenu: () => void;
   onOpenSettings: () => void;
   onOpenTutorial: () => void;
-  onSave: () => void;
   onSignIn: () => void;
   onSignOut: () => void;
   signingIn: boolean;
@@ -39,12 +26,9 @@ const saveLabel: Record<SaveState, string> = {
 
 export function Topbar({
   saveState,
-  privacy,
-  onTogglePrivacy,
   onOpenMenu,
   onOpenSettings,
   onOpenTutorial,
-  onSave,
   onSignIn,
   onSignOut,
   signingIn,
@@ -70,22 +54,12 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          className="flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-solid/60 px-3 text-xs"
-          aria-pressed={privacy}
-          onClick={onTogglePrivacy}
-        >
-          {privacy ? <EyeOff size={17} /> : <Eye size={17} />} 이름 {privacy ? "가림 중" : "표시 중"}
-        </button>
         <IconButton className="max-sm:hidden" aria-label="테마 설정" onClick={onOpenSettings}>
           <Moon size={19} />
         </IconButton>
         <IconButton className="max-sm:hidden" aria-label="도움말" onClick={onOpenTutorial}>
           <HelpCircle size={19} />
         </IconButton>
-        <Button variant="soft" onClick={onSave}>
-          <Save size={16} /> 저장하기
-        </Button>
         {user ? (
           <button
             className="flex min-h-[42px] items-center gap-2 rounded-xl border border-line bg-card py-0 pl-1 pr-2.5"

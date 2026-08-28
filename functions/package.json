@@ -3,7 +3,9 @@
   "private": true,
   "main": "lib/index.js",
   "type": "module",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "generate:prompts": "node tools/generate-prompts.mjs",
     "prebuild": "node tools/generate-prompts.mjs",
@@ -13,7 +15,7 @@
   },
   "dependencies": {
     "firebase-admin": "^13.0.2",
-    "firebase-functions": "^6.3.0",
+    "firebase-functions": "^7.3.2",
     "openai": "^4.77.0",
     "zod": "^3.24.1"
   },

@@ -46,7 +46,8 @@ export function AppShell() {
   const { theme, setTheme, reduceMotion, setReduceMotion, reduceTransparency, setReduceTransparency } =
     useTheme();
   const { message: toastMessage, toast } = useToast();
-  const [privacy, setPrivacy] = useState(false);
+  // 이름 가림 토글을 상단바에서 없애 현재는 항상 표시한다.
+  const privacy = false;
   const [cloudNames, setCloudNames] = useState(false);
   const [tutorial, setTutorial] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
@@ -91,13 +92,15 @@ export function AppShell() {
       .catch(() => undefined);
   }, [user]);
 
-  // view 변경 시 로컬에 마지막 화면과 저장 상태를 기록한다.
+  // 저장 버튼을 없앴으므로 화면이 바뀔 때 자동으로 저장한다.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       saveLastView(view);
-      setSaveState(navigator.onLine ? "saved" : "offline");
+      void autosave();
     }, 450);
     return () => window.clearTimeout(timer);
+    // autosave는 매 렌더마다 새로 만들어지므로 의존성에서 뺀다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   const navigate = (next: View) => {
@@ -112,7 +115,8 @@ export function AppShell() {
     setWorkMode(workModeForRole(role));
   };
 
-  const save = async () => {
+  /** 상단 저장 버튼을 대신하는 조용한 자동 저장. 알림 없이 상태 점만 바꾼다. */
+  const autosave = async () => {
     setSaveState("saving");
     saveWorkspaceSnapshot({ view, theme, privacy, ...profile, updatedAt: Date.now() });
     if (user && isFirebaseConfigured) {
@@ -125,12 +129,10 @@ export function AppShell() {
         });
       } catch {
         setSaveState("offline");
-        toast("클라우드 저장에 실패했지만 기기 초안은 안전하게 유지했습니다.");
         return;
       }
     }
-    setSaveState("saved");
-    toast(user ? "계정에 안전하게 저장했습니다." : "현재 기기에 임시 저장했습니다.");
+    setSaveState(navigator.onLine ? "saved" : "offline");
   };
 
   const persistAssessmentPlan = useCallback(
@@ -264,12 +266,9 @@ export function AppShell() {
       <main className="min-w-0 lg:col-start-2">
         <Topbar
           saveState={saveState}
-          privacy={privacy}
-          onTogglePrivacy={() => setPrivacy((value) => !value)}
           onOpenMenu={() => setMobileNav(true)}
           onOpenSettings={() => navigate("settings")}
           onOpenTutorial={() => setTutorial(true)}
-          onSave={() => void save()}
           onSignIn={() => void signIn()}
           onSignOut={() => void logout()}
           signingIn={signingIn}
