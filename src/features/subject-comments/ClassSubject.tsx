@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Clipboard, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import { analyzeAssessmentResults } from "@/lib/files";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import {
   createUniqueGroundedSentence,
@@ -96,6 +97,8 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
   const [ratings, setRatings] = useState<Record<string, SchoolLevel>>({});
   const [results, setResults] = useState<GeneratedSentence[]>([]);
   const [summary, setSummary] = useState<Record<string, string>>({});
+  /** 종합의견을 다시 만드는 중인 학생. 그 줄의 버튼만 잠근다. */
+  const [regeneratingId, setRegeneratingId] = useState("");
 
   const selectedStandards = selectedStandardIds
     .map((id) => standards.find((item) => item.standardId === id))
@@ -178,7 +181,92 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
         .join(" ");
     });
     setSummary(next);
+    setStep(5);
     toast("학생별 여러 과목 평어를 선택한 기준 순서대로 연결했습니다.");
+  };
+
+  /**
+   * 이미 매긴 평가결과 파일을 읽어 학기말 종합의견까지 한 번에 만든다.
+   * 평가단계가 정해져 있으므로 명단·평가표 단계를 건너뛴다.
+   */
+  const useResultFile = async (file: File) => {
+    let rows;
+    try {
+      rows = await analyzeAssessmentResults(file, standards);
+    } catch (error) {
+      return toast(error instanceof Error ? error.message : "평가결과 파일을 분석하지 못했습니다.");
+    }
+    const matched = rows.filter((row) => row.standard);
+    if (!matched.length) {
+      return toast("공식 성취기준과 연결되는 항목을 찾지 못했습니다.");
+    }
+
+    // 번호 순으로 명단을 세우고, 등장한 성취기준을 평가표 열로 삼는다.
+    const numbers = [...new Set(matched.map((row) => row.number))].sort((a, b) => a - b);
+    const nextStudents: Student[] = numbers.map((number) => ({
+      id: `s-${number}`,
+      number,
+      name: matched.find((row) => row.number === number)?.name ?? `${number}번`,
+    }));
+    const nextStandards = [...new Map(matched.map((row) => [row.standard!.standardId, row.standard!])).values()];
+
+    const created: GeneratedSentence[] = [];
+    const usedDrafts: string[] = [];
+    const nextRatings: Record<string, SchoolLevel> = {};
+    matched.forEach((row, index) => {
+      const standard = row.standard!;
+      const officialLevel = officialLevelFor(row.schoolLevel);
+      nextRatings[cellKey(`s-${row.number}`, standard.standardId)] = row.schoolLevel;
+      const sentence = createUniqueGroundedSentence({
+        standard,
+        officialLevel,
+        schoolLevel: row.schoolLevel,
+        usedSentences: usedDrafts,
+        seed: row.number * 101 + index,
+      });
+      usedDrafts.push(sentence);
+      created.push({
+        id: crypto.randomUUID(),
+        studentId: `s-${row.number}`,
+        sentence,
+        standardId: standard.standardId,
+        officialLevel,
+        schoolLevel: row.schoolLevel,
+        grounded: true,
+        needsReview: false,
+        reviewReason: "",
+        locked: false,
+        confirmed: false,
+        edited: false,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    sentenceHistory.current = usedDrafts;
+    setStudents(nextStudents);
+    setSelectedStandardIds(nextStandards.map((standard) => standard.standardId));
+    // "매우 잘함"처럼 5단계에서만 쓰는 이름이 있으면 5단계 척도로 본다.
+    setLevelCount(matched.some((row) => row.schoolLevel.startsWith("매우")) ? 5 : 3);
+    setRatings(nextRatings);
+    setResults(created);
+    setSummary(
+      Object.fromEntries(
+        nextStudents.map((student) => [
+          student.id,
+          created
+            .filter((item) => item.studentId === student.id)
+            .map((item) => item.sentence)
+            .join(" "),
+        ]),
+      ),
+    );
+    setStep(5);
+
+    const skipped = rows.length - matched.length;
+    toast(
+      `${nextStudents.length}명 · 성취기준 ${nextStandards.length}개로 학기말 종합의견을 만들었습니다.` +
+        (skipped ? ` 공식 기준과 연결하지 못한 ${skipped}줄은 제외했습니다.` : ""),
+    );
   };
 
   const generate = async () => {
@@ -344,6 +432,95 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     }
   };
 
+  /**
+   * 한 학생의 평어를 영역마다 새로 만들어 종합의견까지 다시 잇는다.
+   * 문장을 지역 변수로 모은 뒤 한 번에 반영해야 이어붙인 결과가 어긋나지 않는다.
+   */
+  const regenerateSummary = async (student: Student) => {
+    const items = results.filter((item) => item.studentId === student.id);
+    if (!items.length) return toast("다시 만들 평어가 없습니다.");
+    setRegeneratingId(student.id);
+    // 다른 학생의 문장과 지금까지 쓴 문장을 모두 중복 후보로 둔다.
+    const used = [
+      ...sentenceHistory.current,
+      ...results.filter((item) => item.studentId !== student.id).map((item) => item.sentence),
+    ];
+    const sentences: string[] = [];
+    const patches = new Map<string, Partial<GeneratedSentence>>();
+    const useAi = isCloudAiEnabled && Boolean(auth?.currentUser);
+    let aiFailed = false;
+    try {
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const standard = selectedStandards.find(
+          (current) => current.standardId === item.standardId,
+        );
+        if (!standard) continue;
+        regenerationSeed.current += 1;
+        const seed = student.number * 31 + index + regenerationSeed.current;
+        const pool = [...used, ...sentences];
+        const draft = createUniqueGroundedSentence({
+          standard,
+          officialLevel: item.officialLevel,
+          schoolLevel: item.schoolLevel,
+          usedSentences: pool,
+          seed,
+        });
+        let sentence = draft;
+        let patch: Partial<GeneratedSentence> = {
+          sentence: draft,
+          grounded: true,
+          needsReview: false,
+          reviewReason: "",
+        };
+        if (useAi) {
+          try {
+            const ai = await generateSubjectWithAi(
+              buildSubjectAiRequest({
+                anonymousStudentId: item.studentId ?? `student-${seed}`,
+                standard,
+                item,
+                sentenceLength: "기본",
+                usedSentences: pool,
+                diversificationSeed: seed,
+              }),
+            );
+            if (ai.sentence && !isSubjectSentenceTooSimilar(ai.sentence, pool)) {
+              sentence = ai.sentence;
+              patch = {
+                sentence: ai.sentence,
+                grounded: ai.grounded,
+                needsReview: ai.needsReview,
+                reviewReason: ai.reviewReason,
+              };
+            }
+          } catch {
+            // 한 문장이 실패해도 기기 초안으로 이어서 끝까지 만든다.
+            aiFailed = true;
+          }
+        }
+        sentences.push(sentence);
+        patches.set(item.id, patch);
+      }
+
+      sentenceHistory.current = [...sentenceHistory.current, ...sentences];
+      setResults((current) =>
+        current.map((item) => {
+          const patch = patches.get(item.id);
+          return patch ? { ...item, ...patch } : item;
+        }),
+      );
+      setSummary((current) => ({ ...current, [student.id]: sentences.join(" ") }));
+      toast(
+        aiFailed
+          ? `${student.number}번 종합의견을 다시 만들었습니다. AI 응답이 지연된 문장은 기기 초안을 사용했습니다.`
+          : `${student.number}번 종합의견을 ${sentences.length}개 문장으로 다시 만들었습니다.`,
+      );
+    } finally {
+      setRegeneratingId("");
+    }
+  };
+
   const setStudentCount = (count: number) => {
     const clamped = Math.max(0, Math.min(40, Math.floor(count || 0)));
     setStudents(
@@ -378,6 +555,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
             savedPlan={savedPlan}
             onStandardsChange={handlePlanStandards}
             onSavePlan={onSavePlan}
+            onResultFile={useResultFile}
             toast={toast}
           />
           {planMode !== "choose" && (planMode === "manual" || selectedStandards.length > 0) && (
@@ -661,40 +839,66 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
               );
             })}
           </div>
-          {Object.keys(summary).length > 0 && (
-            <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-              <h2 className="text-xl font-bold">학기말 종합의견</h2>
-              <p className="text-xs text-muted">
-                새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다.
-              </p>
-              {students
-                .filter((student) => summary[student.id])
-                .map((student) => (
-                  <div
-                    key={student.id}
-                    className="mt-3 grid items-center gap-2.5 sm:grid-cols-[140px_1fr_auto]"
-                  >
-                    <div className="flex flex-col">
-                      <b>{student.number}번</b>
-                      <span className="text-[10px] text-muted">
-                        {summary[student.id].length}자 · {utf8Bytes(summary[student.id])}바이트
-                      </span>
-                    </div>
-                    <textarea
-                      className="min-h-[88px]"
-                      value={summary[student.id]}
-                      aria-label={`${student.number}번 학기말 종합의견`}
-                      onChange={(event) =>
-                        setSummary({ ...summary, [student.id]: event.target.value })
-                      }
-                    />
+        </section>
+      )}
+
+      {step === 5 && (
+        <section>
+          <button
+            type="button"
+            onClick={() => setStep(4)}
+            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+          >
+            ← 학생별 평어 검토로
+          </button>
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">학기말 종합의견</h2>
+            <p className="mt-1 text-muted">
+              새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {students
+              .filter((student) => summary[student.id])
+              .map((student) => (
+                <div
+                  key={student.id}
+                  className="grid items-start gap-2.5 sm:grid-cols-[140px_1fr_auto]"
+                >
+                  <div className="flex flex-col">
+                    <b>{student.number}번</b>
+                    <span className="text-[10px] text-muted">
+                      {summary[student.id].length}자 · {utf8Bytes(summary[student.id])}바이트
+                    </span>
+                  </div>
+                  <textarea
+                    className="min-h-[88px] leading-relaxed"
+                    value={summary[student.id]}
+                    aria-label={`${student.number}번 학기말 종합의견`}
+                    onChange={(event) =>
+                      setSummary({ ...summary, [student.id]: event.target.value })
+                    }
+                  />
+                  <div className="flex gap-1.5 sm:flex-col">
                     <Button variant="ghost" size="sm" onClick={() => copy(summary[student.id])}>
-                      복사
+                      <Clipboard size={14} /> 복사
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={regeneratingId === student.id}
+                      onClick={() => void regenerateSummary(student)}
+                    >
+                      <RefreshCw
+                        size={14}
+                        className={regeneratingId === student.id ? "animate-spin-slow" : undefined}
+                      />
+                      {regeneratingId === student.id ? "생성 중" : "다시 생성"}
                     </Button>
                   </div>
-                ))}
-            </div>
-          )}
+                </div>
+              ))}
+          </div>
         </section>
       )}
     </div>
