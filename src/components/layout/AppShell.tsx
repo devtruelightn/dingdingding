@@ -25,6 +25,7 @@ import { viewForRole, workModeForRole } from "@/lib/school";
 import {
   isSavedAssessmentPlan,
   loadStoredAssessmentPlan,
+  loadTeacherProfile,
   markTutorialDone,
   saveLastView,
   saveStoredAssessmentPlan,
@@ -38,7 +39,8 @@ const workModeLabel: Record<WorkMode, string> = { quick: "빠른 생성", class:
 
 /** 앱 전체 셸: 진입 흐름(학교급 → 학년·역할) → 사이드바 작업 화면 오케스트레이션. */
 export function AppShell() {
-  const { stage, profile, selectSchoolLevel, selectGrade, selectRole, restart } = useOnboarding();
+  const { stage, profile, selectSchoolLevel, selectGrade, selectRole, resume, restart } =
+    useOnboarding();
   const [view, setView] = useState<View>("behavior");
   const [workMode, setWorkMode] = useState<WorkMode>("quick");
   const { theme, setTheme, reduceMotion, setReduceMotion, reduceTransparency, setReduceTransparency } =
@@ -59,6 +61,15 @@ export function AppShell() {
   useEffect(() => {
     setSavedPlan(loadStoredAssessmentPlan());
   }, []);
+
+  // 지난번에 고른 학교급·학년·역할이 있으면 진입 화면을 건너뛴다.
+  useEffect(() => {
+    const saved = loadTeacherProfile();
+    if (!saved) return;
+    resume(saved);
+    setView(viewForRole(saved.role));
+    setWorkMode(workModeForRole(saved.role));
+  }, [resume]);
 
   // 로그인 시 클라우드에 저장된 평가계획을 병합한다.
   useEffect(() => {

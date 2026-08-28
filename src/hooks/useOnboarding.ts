@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { gradesFor } from "@/lib/school";
+import { clearTeacherProfile, saveTeacherProfile } from "@/lib/storage";
 import type { OnboardingStage, SchoolStage, TeacherProfile, TeacherRole } from "@/types";
 
 const INITIAL_PROFILE: TeacherProfile = {
@@ -29,12 +30,27 @@ export const useOnboarding = () => {
     [],
   );
 
+  // 역할까지 골라야 한 벌이 완성되므로 이때 저장한다.
   const selectRole = useCallback((role: TeacherRole) => {
-    setProfile((current) => ({ ...current, role }));
+    setProfile((current) => {
+      const next = { ...current, role };
+      saveTeacherProfile(next);
+      return next;
+    });
     setStage("work");
   }, []);
 
-  const restart = useCallback(() => setStage("school"), []);
+  /** 저장해 둔 선택으로 진입 화면을 건너뛴다. */
+  const resume = useCallback((saved: TeacherProfile) => {
+    setProfile(saved);
+    setStage("work");
+  }, []);
 
-  return { stage, profile, selectSchoolLevel, selectGrade, selectRole, restart };
+  // 다시 고르는 중에 새로고침하면 반쯤 고른 값이 남지 않도록 지운다.
+  const restart = useCallback(() => {
+    clearTeacherProfile();
+    setStage("school");
+  }, []);
+
+  return { stage, profile, selectSchoolLevel, selectGrade, selectRole, resume, restart };
 };

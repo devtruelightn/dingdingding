@@ -1,6 +1,15 @@
 "use client";
 
-import type { BehaviorWorkState, SavedAssessmentPlan, Theme, View } from "@/types";
+import { gradesFor } from "@/lib/school";
+import type {
+  BehaviorWorkState,
+  SavedAssessmentPlan,
+  SchoolStage,
+  TeacherProfile,
+  TeacherRole,
+  Theme,
+  View,
+} from "@/types";
 
 /**
  * 브라우저 localStorage 헬퍼. 서버 렌더링과 저장소 차단 브라우저에서도
@@ -13,6 +22,7 @@ const KEYS = {
   assessmentPlan: "pht-assessment-plan",
   workspace: "pht-workspace",
   behaviorWork: "pht-behavior-work-v2",
+  teacherProfile: "pht-teacher-profile",
 } as const;
 
 const readRaw = (key: string): string | null => {
@@ -84,6 +94,44 @@ export const loadStoredAssessmentPlan = (): SavedAssessmentPlan | null => {
 
 export const saveStoredAssessmentPlan = (plan: SavedAssessmentPlan) =>
   writeRaw(KEYS.assessmentPlan, JSON.stringify(plan));
+
+const schoolStages: SchoolStage[] = ["elementary", "middle", "high"];
+const teacherRoles: TeacherRole[] = ["homeroom", "subject"];
+
+/** 저장된 값이 지금의 학교급·학년·역할 조합으로 유효한지 확인한다. */
+export const isTeacherProfile = (value: unknown): value is TeacherProfile => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<TeacherProfile>;
+  return (
+    typeof candidate.schoolLevel === "string" &&
+    schoolStages.includes(candidate.schoolLevel) &&
+    typeof candidate.role === "string" &&
+    teacherRoles.includes(candidate.role) &&
+    typeof candidate.grade === "number" &&
+    // 학교급마다 학년 범위가 달라 짝이 맞는지까지 본다.
+    gradesFor(candidate.schoolLevel).includes(candidate.grade)
+  );
+};
+
+/** 진입 화면에서 고른 학교급·학년·역할. 다음 방문에 그대로 이어 쓴다. */
+export const loadTeacherProfile = (): TeacherProfile | null => {
+  const raw = readRaw(KEYS.teacherProfile);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (isTeacherProfile(parsed)) return parsed;
+    removeRaw(KEYS.teacherProfile);
+    return null;
+  } catch {
+    removeRaw(KEYS.teacherProfile);
+    return null;
+  }
+};
+
+export const saveTeacherProfile = (profile: TeacherProfile) =>
+  writeRaw(KEYS.teacherProfile, JSON.stringify(profile));
+
+export const clearTeacherProfile = () => removeRaw(KEYS.teacherProfile);
 
 export const loadBehaviorWork = (): unknown => {
   const raw = readRaw(KEYS.behaviorWork);

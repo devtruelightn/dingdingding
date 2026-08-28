@@ -5,6 +5,7 @@ import { anonymizeText } from "@/lib/privacy";
 import { parseRoster } from "@/lib/roster";
 import { createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
 import { analyzeAssessmentPlan, parseAssessmentResultText, parseExtractedText, splitEvaluationBlocks } from "@/lib/files";
+import { isTeacherProfile } from "@/lib/storage";
 
 describe("교육과정 데이터", () => {
   it("611개 코드와 A/B/C 원문을 누락 없이 제공한다", () => {
@@ -230,5 +231,18 @@ describe("교과평가 결과 읽기", () => {
     expect(blocks[1].segment).toContain("고유어와 관용 표현");
     // 각 토막은 자기 영역의 성취기준까지만 담아야 한다.
     expect(blocks[0].segment).not.toContain("고유어");
+  });
+});
+
+describe("진입 선택 저장", () => {
+  it("학교급과 학년이 짝이 맞을 때만 복원한다", () => {
+    expect(isTeacherProfile({ schoolLevel: "elementary", grade: 6, role: "homeroom" })).toBe(true);
+    expect(isTeacherProfile({ schoolLevel: "middle", grade: 3, role: "subject" })).toBe(true);
+    // 중학교는 1~3학년뿐이라 6학년은 남은 옛 값으로 본다.
+    expect(isTeacherProfile({ schoolLevel: "middle", grade: 6, role: "homeroom" })).toBe(false);
+    expect(isTeacherProfile({ schoolLevel: "academy", grade: 1, role: "homeroom" })).toBe(false);
+    expect(isTeacherProfile({ schoolLevel: "elementary", grade: 1, role: "principal" })).toBe(false);
+    expect(isTeacherProfile({ schoolLevel: "elementary", grade: 1 })).toBe(false);
+    expect(isTeacherProfile(null)).toBe(false);
   });
 });
