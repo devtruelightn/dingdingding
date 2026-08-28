@@ -30,6 +30,28 @@ export interface Student {
   name: string;
 }
 
+export type BehaviorLevel = "잘함" | "보통" | "노력요함";
+export type BehaviorWorkStatus = "empty" | "draft" | "completed";
+
+export interface BehaviorStudentWork {
+  studentNumber: number;
+  selectedKeywords: string[];
+  keywordLevels: Record<string, BehaviorLevel>;
+  observationMemo: string;
+  generatedText: string;
+  finalText: string;
+  snippets: string[];
+  style: string;
+  status: BehaviorWorkStatus;
+  updatedAt: string;
+}
+
+export interface BehaviorWorkState {
+  studentCount: number;
+  currentStudentNumber: number;
+  students: BehaviorStudentWork[];
+}
+
 export interface SavedAssessmentPlan {
   id: string;
   fileName: string;
