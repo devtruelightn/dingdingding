@@ -104,7 +104,7 @@ export function AppShell() {
   }, [view]);
 
   const navigate = (next: View) => {
-    setView(next);
+    setView(profile.role === "subject" && next === "behavior" ? "subject" : next);
     setMobileNav(false);
   };
 

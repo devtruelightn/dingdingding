@@ -63,7 +63,7 @@ export function Sidebar({
       </button>
 
       <nav className="flex flex-col gap-1.5" aria-label="주요 메뉴">
-        {navItemsFor(profile.schoolLevel).map(({ id, label, icon: Icon }) => (
+        {navItemsFor(profile.schoolLevel, profile.role).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => onNavigate(id)}
