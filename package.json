@@ -1,0 +1,51 @@
+{
+  "name": "pyeonghaeng-toktok",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "displayName": "평행톡톡",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "predev": "node tools/copy-pdf-worker.mjs",
+    "dev": "next dev",
+    "prebuild": "node tools/copy-pdf-worker.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit && tsc -p functions/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:rules": "firebase emulators:exec --project demo-pyeonghaeng-toktok --only firestore,storage \"vitest run --config vitest.emulator.config.ts\"",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy:backend": "firebase deploy --only functions,firestore:rules,firestore:indexes,storage"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "firebase": "^12.18.0",
+    "idb": "^8.0.3",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.475.0",
+    "next": "^15.5.4",
+    "pdfjs-dist": "^4.10.38",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "^1.49.1",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.4",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.5.4",
+    "firebase-tools": "^13.29.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(uid) { return signedIn() && request.auth.uid == uid; }
+    function shortText(value, max) { return value is string && value.size() <= max; }
+    function validOwnerOnCreate(uid) { return request.resource.data.ownerUid == uid; }
+    function ownerUnchanged() { return request.resource.data.ownerUid == resource.data.ownerUid; }
+    function validWorkspace(uid) {
+      return validOwnerOnCreate(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid','title','type','academicYear','semester','grade','classLabel','privacyMode','schemaVersion','createdAt','updatedAt'])
+        && shortText(request.resource.data.title, 120)
+        && shortText(request.resource.data.type, 40)
+        && request.resource.data.schemaVersion is int
+        && request.resource.data.schemaVersion >= 1;
+    }
+    function validStudent(uid) {
+      return validOwnerOnCreate(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid','anonymousStudentId','number','cloudName','displayMode','createdAt','updatedAt'])
+        && shortText(request.resource.data.anonymousStudentId, 80)
+        && request.resource.data.number is int
+        && request.resource.data.number >= 1 && request.resource.data.number <= 200
+        && (!request.resource.data.keys().hasAny(['cloudName']) || shortText(request.resource.data.cloudName, 40));
+    }
+    function validGenerated(uid) {
+      return validOwnerOnCreate(uid)
+        && request.resource.data.keys().hasOnly(['ownerUid','anonymousStudentId','type','sentence','standardIds','officialLevel','schoolLevel','grounded','needsReview','reviewReason','locked','confirmed','edited','promptVersion','createdAt','updatedAt'])
+        && shortText(request.resource.data.sentence, 8000)
+        && request.resource.data.standardIds is list && request.resource.data.standardIds.size() <= 3
+        && shortText(request.resource.data.type, 30)
+        && request.resource.data.locked is bool
+        && request.resource.data.confirmed is bool;
+    }
+
+    match /users/{uid} {
+      allow read, create: if owns(uid) && request.resource.data.keys().hasOnly(['displayName','email','theme','createdAt','updatedAt']);
+      allow update: if owns(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName','email','theme','updatedAt']);
+      allow delete: if owns(uid);
+
+      match /settings/{id} {
+        allow read, delete: if owns(uid);
+        allow create: if owns(uid) && validOwnerOnCreate(uid) && request.resource.data.keys().hasOnly(['ownerUid','theme','reduceMotion','reduceTransparency','cloudNames','retentionDays','updatedAt']);
+        allow update: if owns(uid) && validOwnerOnCreate(uid) && ownerUnchanged() && request.resource.data.keys().hasOnly(['ownerUid','theme','reduceMotion','reduceTransparency','cloudNames','retentionDays','updatedAt']);
+      }
+      match /workspaces/{workspaceId} {
+        allow read, delete: if owns(uid);
+        allow create: if owns(uid) && validWorkspace(uid);
+        allow update: if owns(uid) && validWorkspace(uid) && ownerUnchanged();
+
+        match /students/{studentId} {
+          allow read, delete: if owns(uid);
+          allow create: if owns(uid) && validStudent(uid);
+          allow update: if owns(uid) && validStudent(uid) && ownerUnchanged();
+        }
+        match /generatedTexts/{textId} {
+          allow read, delete: if owns(uid);
+          allow create: if owns(uid) && validGenerated(uid);
+          allow update: if owns(uid) && validGenerated(uid) && ownerUnchanged();
+        }
+        match /{collectionName}/{documentId} {
+          allow read, delete: if owns(uid) && collectionName in ['subjects','versions','cloudNames'];
+          allow create: if owns(uid) && validOwnerOnCreate(uid) && request.resource.data.size() <= 40;
+          allow update: if owns(uid) && ownerUnchanged() && request.resource.data.size() <= 40;
+        }
+      }
+      match /favorites/{favoriteId} {
+        allow read, delete: if owns(uid);
+        allow create: if owns(uid) && validOwnerOnCreate(uid) && request.resource.data.size() <= 40;
+        allow update: if owns(uid) && ownerUnchanged() && request.resource.data.size() <= 40;
+      }
+      match /usage/{periodId} {
+        allow read: if owns(uid);
+        allow write: if false;
+      }
+    }
+    match /_system/{document=**} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

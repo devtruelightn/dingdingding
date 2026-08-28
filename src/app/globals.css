@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/*
+ * 디자인 토큰. 값은 미리캔버스풍 팔레트를 기준으로 하며,
+ * 테마 전환 시 아래 [data-theme=...] 블록에서 CSS 변수만 덮어쓴다.
+ */
+@theme {
+  --color-ink: #16181d;
+  --color-muted: #70798f;
+  --color-line: #e5e8eb;
+  --color-card: #ffffff;
+  --color-solid: #ffffff;
+  --color-primary: #21afbf;
+  --color-primary-dark: #1c95a2;
+  --color-primary-soft: #e8f8fa;
+  --color-accent: #ff8a65;
+  --color-success: #258463;
+  --color-warning: #9a6718;
+  --color-danger: #b34d58;
+  --color-surface: #f6f8f9;
+
+  --radius-panel: 16px;
+
+  --font-sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo",
+    "Noto Sans KR", system-ui, sans-serif;
+}
+
+[data-theme="mint"] {
+  --color-primary: #25866f;
+  --color-primary-dark: #176a57;
+  --color-primary-soft: #e1f7ef;
+  --color-surface: #eefbf6;
+}
+[data-theme="peach"] {
+  --color-primary: #ad5d46;
+  --color-primary-dark: #8d4633;
+  --color-primary-soft: #ffe9e1;
+  --color-surface: #fff4ee;
+}
+[data-theme="sky"] {
+  --color-primary: #3977a9;
+  --color-primary-dark: #285d87;
+  --color-primary-soft: #e4f2ff;
+  --color-surface: #eef6ff;
+}
+[data-theme="butter"] {
+  --color-primary: #8a6a16;
+  --color-primary-dark: #6a4f0d;
+  --color-primary-soft: #fff2bd;
+  --color-surface: #fff9e6;
+}
+[data-theme="rose"] {
+  --color-primary: #a64f76;
+  --color-primary-dark: #813a5a;
+  --color-primary-soft: #ffe7f1;
+  --color-surface: #fff2f8;
+}
+
+[data-theme="dark"],
+[data-theme="system"] {
+  --dark-ink: #f6f3ff;
+  --dark-muted: #bcb7cf;
+  --dark-line: rgba(255, 255, 255, 0.12);
+  --dark-card: #231f35;
+  --dark-solid: #272238;
+  --dark-primary: #b7a7ff;
+  --dark-primary-dark: #c8bdff;
+  --dark-primary-soft: #3d355c;
+  --dark-surface: #171522;
+}
+[data-theme="dark"] {
+  --color-ink: var(--dark-ink);
+  --color-muted: var(--dark-muted);
+  --color-line: var(--dark-line);
+  --color-card: var(--dark-card);
+  --color-solid: var(--dark-solid);
+  --color-primary: var(--dark-primary);
+  --color-primary-dark: var(--dark-primary-dark);
+  --color-primary-soft: var(--dark-primary-soft);
+  --color-surface: var(--dark-surface);
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --color-ink: var(--dark-ink);
+    --color-muted: var(--dark-muted);
+    --color-line: var(--dark-line);
+    --color-card: var(--dark-card);
+    --color-solid: var(--dark-solid);
+    --color-primary: var(--dark-primary);
+    --color-primary-dark: var(--dark-primary-dark);
+    --color-primary-soft: var(--dark-primary-soft);
+    --color-surface: var(--dark-surface);
+  }
+}
+
+@layer base {
+  html {
+    min-width: 320px;
+    background: var(--color-surface);
+  }
+  body {
+    margin: 0;
+    color: var(--color-ink);
+    background: var(--color-surface);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+  }
+  :where(button, input, textarea, select, summary):focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+    outline-offset: 2px;
+  }
+  :where(textarea, select, input[type="number"]) {
+    border: 1px solid var(--color-line);
+    background: var(--color-solid);
+    border-radius: 8px;
+    color: inherit;
+  }
+  select,
+  input[type="number"] {
+    min-height: 44px;
+    padding: 0 34px 0 12px;
+  }
+  textarea {
+    resize: vertical;
+    padding: 12px 13px;
+  }
+}
+
+/* 접근성 설정: <html data-reduce-motion> / data-reduce-transparency */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+[data-reduce-transparency="true"] .glass {
+  backdrop-filter: none !important;
+  background: var(--color-solid) !important;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, 10px);
+    opacity: 0;
+  }
+}
+.animate-spin-slow {
+  animation: spin 1s linear infinite;
+}

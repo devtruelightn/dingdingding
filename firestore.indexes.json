@@ -1,0 +1,8 @@
+{
+  "indexes": [
+    { "collectionGroup": "workspaces", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "academicYear", "order": "DESCENDING" }, { "fieldPath": "updatedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "generatedTexts", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "type", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] }
+  ],
+  "fieldOverrides": []
+}
+

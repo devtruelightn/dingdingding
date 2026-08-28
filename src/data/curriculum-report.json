@@ -1,0 +1,177 @@
+{
+  "records": 611,
+  "sources": [
+    {
+      "gradeBand": "1-2",
+      "source": "(초)2022+개정+교육과정에+따른+성취수준(1~2학년군).pdf",
+      "sha256": "7fd7cd1a4131aa8ad5e7d0afbd9ade71e7940dc031aca2b1ed823b9fab45d7e8",
+      "pages": 95,
+      "subjects": [
+        {
+          "subject": "국어",
+          "areas": 6,
+          "standards": 23,
+          "warnings": 0
+        },
+        {
+          "subject": "수학",
+          "areas": 4,
+          "standards": 29,
+          "warnings": 0
+        },
+        {
+          "subject": "바른 생활",
+          "areas": 4,
+          "standards": 16,
+          "warnings": 0
+        },
+        {
+          "subject": "슬기로운 생활",
+          "areas": 4,
+          "standards": 16,
+          "warnings": 0
+        },
+        {
+          "subject": "즐거운 생활",
+          "areas": 4,
+          "standards": 16,
+          "warnings": 0
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "gradeBand": "3-4",
+      "source": "(초)2022+개정+교육과정에+따른+성취수준(3~4학년군).pdf",
+      "sha256": "3b153eb390e414077ae469128741e84874c7ea2823d35d583adceb43a419a449",
+      "pages": 202,
+      "subjects": [
+        {
+          "subject": "국어",
+          "areas": 6,
+          "standards": 30,
+          "warnings": 0
+        },
+        {
+          "subject": "사회",
+          "areas": 10,
+          "standards": 22,
+          "warnings": 0
+        },
+        {
+          "subject": "도덕",
+          "areas": 4,
+          "standards": 12,
+          "warnings": 0
+        },
+        {
+          "subject": "수학",
+          "areas": 4,
+          "standards": 47,
+          "warnings": 0
+        },
+        {
+          "subject": "과학",
+          "areas": 16,
+          "standards": 51,
+          "warnings": 0
+        },
+        {
+          "subject": "체육",
+          "areas": 3,
+          "standards": 23,
+          "warnings": 0
+        },
+        {
+          "subject": "음악",
+          "areas": 3,
+          "standards": 13,
+          "warnings": 0
+        },
+        {
+          "subject": "미술",
+          "areas": 3,
+          "standards": 13,
+          "warnings": 0
+        },
+        {
+          "subject": "영어",
+          "areas": 2,
+          "standards": 20,
+          "warnings": 0
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "gradeBand": "5-6",
+      "source": "(초)2022+개정+교육과정에+따른+성취수준(5~6학년군).pdf",
+      "sha256": "fc028099b2103978c2ce7973dd1f04b3ea07d0eaf6a5ad4e672ed699fbdc8820",
+      "pages": 237,
+      "subjects": [
+        {
+          "subject": "국어",
+          "areas": 6,
+          "standards": 34,
+          "warnings": 0
+        },
+        {
+          "subject": "사회",
+          "areas": 12,
+          "standards": 27,
+          "warnings": 0
+        },
+        {
+          "subject": "도덕",
+          "areas": 4,
+          "standards": 12,
+          "warnings": 0
+        },
+        {
+          "subject": "수학",
+          "areas": 4,
+          "standards": 45,
+          "warnings": 0
+        },
+        {
+          "subject": "과학",
+          "areas": 16,
+          "standards": 51,
+          "warnings": 0
+        },
+        {
+          "subject": "실과",
+          "areas": 5,
+          "standards": 39,
+          "warnings": 0
+        },
+        {
+          "subject": "체육",
+          "areas": 3,
+          "standards": 26,
+          "warnings": 0
+        },
+        {
+          "subject": "음악",
+          "areas": 3,
+          "standards": 13,
+          "warnings": 0
+        },
+        {
+          "subject": "미술",
+          "areas": 3,
+          "standards": 13,
+          "warnings": 0
+        },
+        {
+          "subject": "영어",
+          "areas": 2,
+          "standards": 20,
+          "warnings": 0
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "warnings": 0
+}

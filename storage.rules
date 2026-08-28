@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function owns(uid) { return request.auth != null && request.auth.uid == uid; }
+    function allowedMime() {
+      return request.resource.contentType.matches('application/pdf')
+        || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        || request.resource.contentType.matches('application/zip')
+        || request.resource.contentType.matches('application/xml')
+        || request.resource.contentType.matches('text/csv');
+    }
+    function allowedName(fileName) {
+      return fileName.matches('^[A-Za-z0-9가-힣._-]{1,120}$')
+        && fileName.matches('^.*\\.(pdf|hwpx|xlsx|csv)$');
+    }
+    match /users/{uid}/uploads/{fileName} {
+      allow get, list, delete: if owns(uid);
+      allow create, update: if owns(uid)
+        && request.resource.size <= 20 * 1024 * 1024
+        && allowedMime()
+        && allowedName(fileName)
+        && request.resource.metadata.ownerUid == uid;
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}
+
