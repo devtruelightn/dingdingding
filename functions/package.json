@@ -5,6 +5,8 @@
   "type": "module",
   "engines": { "node": "22" },
   "scripts": {
+    "generate:prompts": "node tools/generate-prompts.mjs",
+    "prebuild": "node tools/generate-prompts.mjs",
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"

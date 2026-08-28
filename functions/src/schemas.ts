@@ -3,9 +3,21 @@ import { z } from "zod";
 const safeText = (max: number) => z.string().trim().min(1).max(max);
 const identifier = z.string().regex(/^[A-Za-z0-9가-힣_-]{1,80}$/u);
 
+/**
+ * 프롬프트 팩 라우팅에 쓰는 학교급.
+ *
+ * 기존 `schoolLevel` 필드는 학교급이 아니라 평가단계(매우 잘함·잘함·보통·…)를 뜻하므로 이름을 재사용할 수 없다.
+ * 프론트엔드 온보딩의 `TeacherProfile.schoolLevel` 값이 이 필드로 전달된다.
+ * 기본값이 있어 이 필드를 보내지 않는 기존 클라이언트도 그대로 동작한다.
+ */
+const stage = z.enum(["elementary", "middle", "high"]).default("elementary");
+
 export const subjectRequestSchema = z.object({
   anonymousStudentId: identifier,
+  stage,
   gradeBand: z.enum(["1-2", "3-4", "5-6"]),
+  /** 학년. 학년군만으로는 예시집을 특정할 수 없어(3학년과 4학년이 같은 학년군) 선택적으로 받는다. */
+  grade: z.number().int().min(1).max(6).optional(),
   subject: safeText(30),
   area: safeText(80),
   standards: z.array(z.object({
@@ -23,6 +35,7 @@ export const subjectRequestSchema = z.object({
 
 export const behaviorRequestSchema = z.object({
   anonymousStudentId: identifier,
+  stage,
   entries: z.array(z.object({
     category: safeText(30),
     keyword: safeText(50),
