@@ -1,22 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Sparkles,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { Clipboard, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
-import { Button, GlassPanel, PageHeading, Segmented, Stepper } from "@/components/ui";
+import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
-import { RosterInput } from "@/features/roster/RosterInput";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
-import { maskName } from "@/lib/mask";
 import {
   createUniqueGroundedSentence,
   isSubjectSentenceTooSimilar,
@@ -30,20 +20,67 @@ import type {
   SchoolLevel,
   Student,
 } from "@/types";
-import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
 
+/**
+ * 한 작업에 담을 수 있는 성취기준 수. 한 학기 전 과목 평가계획을 통째로 올리면
+ * 30개 안팎이 나오므로 여유를 두고 잡는다. 평가표는 학생 × 기준으로 넓어지니
+ * 무제한으로 두지는 않는다.
+ */
+const MAX_STANDARDS = 40;
+
 interface ClassSubjectProps {
-  privacy: boolean;
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
 }
 
-const STEP_LABELS = ["기본 설정", "명단 입력", "평가 입력", "결과 검토"];
+/** 단계 이동 버튼 한 줄. 왼쪽은 이전, 오른쪽은 다음(+부가 액션). */
+function StepNav({
+  onBack,
+  onNext,
+  nextDisabled,
+  nextLabel = "다음",
+  children,
+}: {
+  onBack?: () => void;
+  onNext?: () => void;
+  nextDisabled?: boolean;
+  nextLabel?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+        >
+          ← 이전
+        </button>
+      ) : (
+        <span />
+      )}
+      <div className="flex items-center gap-2">
+        {children}
+        {onNext && (
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={nextDisabled}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+          >
+            {nextLabel} →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** 명단 × 여러 성취기준 평가표로 학생별 평어를 한 번에 작성하는 화면. */
-export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSubjectProps) {
+export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps) {
   const [step, setStep] = useState(1);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const regenerationSeed = useRef(0);
@@ -57,7 +94,7 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
   const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, SchoolLevel>>({});
   const [results, setResults] = useState<GeneratedSentence[]>([]);
-  const [summary, setSummary] = useState<Record<string, string>>({});
+  const [studentEdits, setStudentEdits] = useState<Record<string, string>>({});
 
   const selectedStandards = selectedStandardIds
     .map((id) => standards.find((item) => item.standardId === id))
@@ -80,7 +117,9 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
       return;
     }
     const gradeBand = selected[0].gradeBand;
-    const compatible = selected.filter((item) => item.gradeBand === gradeBand).slice(0, 12);
+    const compatible = selected
+      .filter((item) => item.gradeBand === gradeBand)
+      .slice(0, MAX_STANDARDS);
     const first = compatible[0];
     setSelectedStandardIds(compatible.map((item) => item.standardId));
     setGrade(Number(first.standardCode[0]));
@@ -89,9 +128,13 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
     setStandardId(first.standardId);
     setRatings({});
     setResults([]);
-    setSummary({});
-    if (compatible.length < selected.length) {
-      toast("같은 학년군의 성취기준 12개까지 자동으로 불러왔습니다.");
+    setStudentEdits({});
+    // 잘린 이유가 학년군 때문인지 개수 상한 때문인지 구분해서 알린다.
+    const sameBand = selected.filter((item) => item.gradeBand === gradeBand).length;
+    if (sameBand > MAX_STANDARDS) {
+      toast(`성취기준이 ${sameBand}개라 앞에서부터 ${MAX_STANDARDS}개만 불러왔습니다.`);
+    } else if (compatible.length < selected.length) {
+      toast(`같은 학년군의 성취기준 ${compatible.length}개를 불러왔습니다.`);
     }
   };
 
@@ -103,8 +146,8 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
       return toast("한 작업에는 같은 학년군의 성취기준만 함께 넣을 수 있습니다.");
     }
     if (selectedStandardIds.includes(candidate.standardId)) return toast("이미 추가한 성취기준입니다.");
-    if (selectedStandardIds.length >= 12) {
-      return toast("한 작업에는 성취기준을 최대 12개까지 추가할 수 있습니다.");
+    if (selectedStandardIds.length >= MAX_STANDARDS) {
+      return toast(`한 작업에는 성취기준을 최대 ${MAX_STANDARDS}개까지 추가할 수 있습니다.`);
     }
     setSelectedStandardIds((items) => [...items, candidate.standardId]);
     toast(`${candidate.subjectName} · ${candidate.areaName} · ${candidate.standardCode}를 추가했습니다.`);
@@ -116,7 +159,7 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
       Object.fromEntries(Object.entries(items).filter(([key]) => !key.endsWith(`::${id}`))),
     );
     setResults((items) => items.filter((item) => item.standardId !== id));
-    setSummary({});
+    setStudentEdits({});
   };
 
   const updateResult = (id: string, patch: Partial<GeneratedSentence>) =>
@@ -125,16 +168,30 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
     await navigator.clipboard.writeText(value);
     toast("클립보드에 복사했습니다.");
   };
-  const makeSummaries = () => {
-    const next: Record<string, string> = {};
-    students.forEach((student) => {
-      next[student.id] = results
-        .filter((item) => item.studentId === student.id)
-        .map((item) => item.sentence)
-        .join(" ");
+  /** 한 학생의 여러 과목 평어를 한 칸에 이어 붙인다 (교사 수정본 우선). */
+  const studentText = (studentId: string) =>
+    studentEdits[studentId] ??
+    results
+      .filter((item) => item.studentId === studentId)
+      .map((item) => item.sentence)
+      .join(" ");
+
+  /** 한 학생의 모든 문장을 다시 생성하고 그 학생 수정본을 초기화한다. */
+  const regenerateStudent = async (student: Student) => {
+    const items = results.filter((item) => item.studentId === student.id);
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      const selectedStandard = selectedStandards.find(
+        (current) => current.standardId === item.standardId,
+      );
+      if (!selectedStandard) continue;
+      await regenerate(item, selectedStandard, student.number * 31 + index);
+    }
+    setStudentEdits((prev) => {
+      const next = { ...prev };
+      delete next[student.id];
+      return next;
     });
-    setSummary(next);
-    toast("학생별 여러 과목 평어를 선택한 기준 순서대로 연결했습니다.");
   };
 
   const generate = async () => {
@@ -176,7 +233,7 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
     if (!created.length) return toast("평가단계를 한 칸 이상 입력해 주세요.");
     sentenceHistory.current = usedDrafts;
     setResults(created);
-    setSummary({});
+    setStudentEdits({});
     setStep(4);
 
     const studentCount = new Set(created.map((item) => item.studentId)).size;
@@ -300,6 +357,17 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
     }
   };
 
+  const setStudentCount = (count: number) => {
+    const clamped = Math.max(0, Math.min(40, Math.floor(count || 0)));
+    setStudents(
+      Array.from({ length: clamped }, (_, index) => ({
+        id: `s-${index + 1}`,
+        number: index + 1,
+        name: `${index + 1}번`,
+      })),
+    );
+  };
+
   const setDefaultRatings = () => {
     const value = levels[Math.floor(levels.length / 2)];
     setRatings(
@@ -313,13 +381,7 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      <PageHeading
-        eyebrow="교과평어"
-        title="우리 반 평어 작성"
-        description="여러 과목과 성취기준을 고른 뒤 학생별 평가단계를 한 표에서 입력하세요."
-        icon={Users}
-      />
-      <Stepper steps={STEP_LABELS} current={step} onStepClick={setStep} />
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 평어</h1>
 
       {step === 1 && (
         <GlassPanel>
@@ -386,7 +448,7 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
                 <div className="mb-2 flex items-center justify-between">
                   <b>{planMode === "plan" ? "평가계획에서 불러온 성취기준" : "평가할 성취기준"}</b>
                   <span className="text-[11px] font-extrabold text-primary-dark">
-                    {selectedStandards.length} / 12개
+                    {selectedStandards.length} / {MAX_STANDARDS}개
                   </span>
                 </div>
                 {selectedStandards.length ? (
@@ -422,15 +484,11 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
                 )}
               </div>
 
-              <div className="mt-6 flex justify-end">
-                <Button
-                  variant="primary"
-                  disabled={!selectedStandards.length}
-                  onClick={() => setStep(2)}
-                >
-                  명단 입력으로 <ChevronRight size={17} />
-                </Button>
-              </div>
+              <StepNav
+                onNext={() => setStep(2)}
+                nextDisabled={!selectedStandards.length}
+                nextLabel="명단 입력"
+              />
             </div>
           )}
         </GlassPanel>
@@ -438,26 +496,49 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
 
       {step === 2 && (
         <GlassPanel>
-          <RosterInput students={students} setStudents={setStudents} toast={toast} />
-          <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-success/10 p-3.5 text-success">
-            <BookOpen size={18} />
-            <p className="text-xs">
-              <b>실명은 현재 기기에만 저장됩니다.</b> 클라우드에는 학생 번호와 임의 ID만 저장하며 외부
-              AI로 전송하지 않습니다.
+          <div className="mb-1">
+            <b>학생 수</b>
+            <small className="block text-[11px] text-muted">
+              평가할 학생 인원만 입력하세요. 1번부터 번호가 자동으로 매겨집니다.
+            </small>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {[10, 15, 20, 25, 30].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => setStudentCount(count)}
+                className={
+                  students.length === count
+                    ? "rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"
+                    : "rounded-lg border border-line px-3 py-2 text-sm text-muted hover:bg-primary-soft/50"
+                }
+              >
+                {count}명
+              </button>
+            ))}
+            <input
+              type="number"
+              min={1}
+              max={40}
+              value={students.length || ""}
+              onChange={(event) => setStudentCount(Number(event.target.value))}
+              aria-label="학생 수 직접 입력"
+              className="w-24"
+              placeholder="직접"
+            />
+          </div>
+          {students.length > 0 && (
+            <p className="mt-3 text-xs text-muted">
+              1번 ~ {students.length}번, 총 {students.length}명
             </p>
-          </div>
-          <div className="mt-6 flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(1)}>
-              <ChevronLeft size={17} /> 이전
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!students.length || !selectedStandards.length}
-              onClick={() => setStep(3)}
-            >
-              평가 입력으로 <ChevronRight size={17} />
-            </Button>
-          </div>
+          )}
+          <StepNav
+            onBack={() => setStep(1)}
+            onNext={() => setStep(3)}
+            nextDisabled={!students.length || !selectedStandards.length}
+            nextLabel="평가 입력"
+          />
         </GlassPanel>
       )}
 
@@ -479,7 +560,6 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
               <thead>
                 <tr>
                   <th className="sticky left-0 top-0 z-30 bg-primary-soft p-2">번호</th>
-                  <th className="sticky top-0 z-20 bg-primary-soft p-2">이름</th>
                   {selectedStandards.map((s) => (
                     <th
                       key={s.standardId}
@@ -495,18 +575,15 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
               <tbody>
                 {students.map((student) => (
                   <tr key={student.id}>
-                    <td className="sticky left-0 z-10 border-b border-line bg-solid/80 p-2">
-                      {student.number}
-                    </td>
-                    <th className="border-b border-line bg-solid/80 p-2">
-                      {privacy ? maskName(student.name) : student.name}
+                    <th className="sticky left-0 z-10 border-b border-line bg-solid/80 p-2">
+                      {student.number}번
                     </th>
                     {selectedStandards.map((s) => {
                       const key = cellKey(student.id, s.standardId);
                       return (
                         <td key={s.standardId} className="border-b border-line p-2">
                           <select
-                            aria-label={`${student.name} ${s.subjectName} ${s.areaName} 평가단계`}
+                            aria-label={`${student.number}번 ${s.subjectName} ${s.areaName} 평가단계`}
                             className="w-[min(190px,100%)]"
                             value={ratings[key] ?? ""}
                             onChange={(event) =>
@@ -526,115 +603,73 @@ export function ClassSubject({ privacy, toast, savedPlan, onSavePlan }: ClassSub
               </tbody>
             </table>
           </div>
-          <div className="mt-6 flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(2)}>
-              <ChevronLeft size={17} /> 이전
+          <StepNav onBack={() => setStep(2)}>
+            <Button variant="ghost" onClick={setDefaultRatings}>
+              전체 기본값
             </Button>
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={setDefaultRatings}>
-                전체 기본값
-              </Button>
-              <Button variant="primary" disabled={!completedCells} onClick={() => void generate()}>
-                <Sparkles size={17} /> {completedCells}개 평어 생성
-              </Button>
-            </div>
-          </div>
+            <Button variant="primary" disabled={!completedCells} onClick={() => void generate()}>
+              <Sparkles size={17} /> {completedCells}개 평어 생성
+            </Button>
+          </StepNav>
         </GlassPanel>
       )}
 
       {step === 4 && (
         <section>
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-bold">학생별 평어 검토</h2>
-              <p className="mt-1 text-muted">
-                {new Set(results.map((item) => item.studentId)).size}명 · {results.length}개 문장 ·
-                교사가 수정한 문장은 자동으로 잠깁니다.
-              </p>
-            </div>
-            <Button variant="primary" onClick={makeSummaries}>
-              <BookOpen size={17} /> 학기말 종합의견
-            </Button>
+          <button
+            type="button"
+            onClick={() => setStep(3)}
+            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+          >
+            ← 평가 입력으로
+          </button>
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">학생별 평어</h2>
+            <p className="mt-1 text-muted">
+              {new Set(results.map((item) => item.studentId)).size}명 · 학생마다 여러 과목 평어를 한
+              칸에 이어 붙였습니다. 바로 수정해서 복사하세요.
+            </p>
           </div>
           <div className="flex flex-col gap-3">
             {students.map((student) => {
               const studentItems = results.filter((item) => item.studentId === student.id);
               if (!studentItems.length) return null;
+              const text = studentText(student.id);
               return (
                 <div
                   key={student.id}
-                  className="grid gap-3 rounded-2xl border border-line bg-card p-3 sm:grid-cols-[110px_1fr]"
+                  className="grid items-start gap-3 sm:grid-cols-[120px_1fr_auto]"
                 >
-                  <div className="flex flex-col items-center justify-center rounded-xl bg-primary-soft p-2 text-center">
-                    <span className="text-xs text-primary">{student.number}</span>
-                    <b className="mt-1">{privacy ? maskName(student.name) : student.name}</b>
-                    <small className="mt-1 text-[10px] text-muted">
-                      {studentItems.length}개 평어
-                    </small>
+                  <div className="flex flex-col">
+                    <b>{student.number}번</b>
+                    <span className="text-[10px] text-muted">
+                      {text.length}자 · {utf8Bytes(text)}바이트
+                    </span>
                   </div>
-                  <div className="flex min-w-0 flex-col gap-2.5">
-                    {studentItems.map((item, index) => {
-                      const selectedStandard = selectedStandards.find(
-                        (current) => current.standardId === item.standardId,
-                      );
-                      if (!selectedStandard) return null;
-                      return (
-                        <SentenceEditor
-                          key={item.id}
-                          item={item}
-                          standard={selectedStandard}
-                          onChange={(patch) => updateResult(item.id, patch)}
-                          onRegenerate={() =>
-                            void regenerate(
-                              item,
-                              selectedStandard,
-                              index + student.number * 31,
-                            )
-                          }
-                          onCopy={() => copy(item.sentence)}
-                        />
-                      );
-                    })}
+                  <textarea
+                    className="min-h-[96px] leading-relaxed"
+                    value={text}
+                    aria-label={`${student.number}번 평어`}
+                    onChange={(event) =>
+                      setStudentEdits((prev) => ({ ...prev, [student.id]: event.target.value }))
+                    }
+                  />
+                  <div className="flex gap-1.5 sm:flex-col">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void regenerateStudent(student)}
+                    >
+                      <RefreshCw size={14} /> 다시 생성
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => copy(text)}>
+                      <Clipboard size={14} /> 복사
+                    </Button>
                   </div>
                 </div>
               );
             })}
           </div>
-          {Object.keys(summary).length > 0 && (
-            <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-              <h2 className="text-xl font-bold">학기말 종합의견</h2>
-              <p className="text-xs text-muted">
-                새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다.
-              </p>
-              {students
-                .filter((student) => summary[student.id])
-                .map((student) => (
-                  <div
-                    key={student.id}
-                    className="mt-3 grid items-center gap-2.5 sm:grid-cols-[140px_1fr_auto]"
-                  >
-                    <div className="flex flex-col">
-                      <b>
-                        {student.number}. {privacy ? maskName(student.name) : student.name}
-                      </b>
-                      <span className="text-[10px] text-muted">
-                        {summary[student.id].length}자 · {utf8Bytes(summary[student.id])}바이트
-                      </span>
-                    </div>
-                    <textarea
-                      className="min-h-[88px]"
-                      value={summary[student.id]}
-                      onChange={(event) =>
-                        setSummary({ ...summary, [student.id]: event.target.value })
-                      }
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => copy(summary[student.id])}>
-                      복사
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          )}
         </section>
       )}
     </div>

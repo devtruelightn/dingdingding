@@ -4,8 +4,9 @@ import type { AssessmentPlanRow, AssessmentPlanSuggestion } from "./types";
 const normalizePlanText = (value: string) =>
   value
     .normalize("NFKC")
-    .replace(/\[?[246][가-힣]{1,2}\d{2}-\d{2}\]?/gu, "")
+    // 공백·기호를 먼저 걷어내야 PDF가 `[6 국 03-05]`로 쪼개 놓은 코드도 함께 지워진다.
     .replace(/[\s\p{P}\p{S}]+/gu, "")
+    .replace(/[246][가-힣]{1,5}\d{4}/gu, "")
     .toLowerCase();
 
 const ngrams = (value: string, size = 2) => {
@@ -44,8 +45,8 @@ export const suggestOfficialStandards = (
   standards
     .map((standard) => {
       let score = textMatchScore(row.standardText, standard.standardText);
-      const uploadedPrefix = /^([246])([가-힣]{1,2})/u.exec(row.standardCode);
-      const officialPrefix = /^([246])([가-힣]{1,2})/u.exec(standard.standardCode);
+      const uploadedPrefix = /^([246])([가-힣]{1,5})/u.exec(row.standardCode);
+      const officialPrefix = /^([246])([가-힣]{1,5})/u.exec(standard.standardCode);
       if (uploadedPrefix && officialPrefix) {
         score += uploadedPrefix[1] === officialPrefix[1] ? 0.06 : -0.12;
         score += uploadedPrefix[2] === officialPrefix[2] ? 0.08 : -0.15;
