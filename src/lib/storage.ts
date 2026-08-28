@@ -1,6 +1,6 @@
 "use client";
 
-import type { SavedAssessmentPlan, Theme, View } from "@/types";
+import type { BehaviorWorkState, SavedAssessmentPlan, Theme, View } from "@/types";
 
 /**
  * 브라우저 localStorage 헬퍼. 서버 렌더링과 저장소 차단 브라우저에서도
@@ -12,6 +12,7 @@ const KEYS = {
   tutorialDone: "pht-tutorial-done",
   assessmentPlan: "pht-assessment-plan",
   workspace: "pht-workspace",
+  behaviorWork: "pht-behavior-work-v2",
 } as const;
 
 const readRaw = (key: string): string | null => {
@@ -83,3 +84,24 @@ export const loadStoredAssessmentPlan = (): SavedAssessmentPlan | null => {
 
 export const saveStoredAssessmentPlan = (plan: SavedAssessmentPlan) =>
   writeRaw(KEYS.assessmentPlan, JSON.stringify(plan));
+
+export const loadBehaviorWork = (): unknown => {
+  const raw = readRaw(KEYS.behaviorWork);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    removeRaw(KEYS.behaviorWork);
+    return null;
+  }
+};
+
+export const saveBehaviorWork = (state: BehaviorWorkState): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(KEYS.behaviorWork, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
+};
