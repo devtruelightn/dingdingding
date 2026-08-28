@@ -21,7 +21,7 @@ export const consumeQuota = async (uid: string) => {
   const day = now.toISOString().slice(0, 10);
   const minute = now.toISOString().slice(0, 16);
   const userRef = database.doc(`users/${uid}/usage/${day}`);
-  const globalRef = database.doc(`_system/usage/${day}`);
+  const globalRef = database.doc(`_system/usage-${day}`);
   await database.runTransaction(async (transaction) => {
     const [userSnapshot, globalSnapshot] = await Promise.all([transaction.get(userRef), transaction.get(globalRef)]);
     const user = userSnapshot.data() ?? {};

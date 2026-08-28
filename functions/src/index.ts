@@ -29,7 +29,13 @@ const upstageKey = defineSecret("UPSTAGE_API_KEY");
 const UPSTAGE_BASE_URL = "https://api.upstage.ai/v1";
 const model = () => process.env.UPSTAGE_MODEL ?? "solar-pro4";
 const upstageClient = () => new OpenAI({ apiKey: upstageKey.value(), baseURL: UPSTAGE_BASE_URL });
-const origins = () => (process.env.APP_ORIGINS ?? "http://localhost:3000").split(",").map((value) => value.trim());
+const origins = () =>
+  (
+    process.env.APP_ORIGINS ??
+    "http://localhost:3000,https://pyeonghaeng-toktok.web.app,https://pyeonghaeng-toktok.firebaseapp.com"
+  )
+    .split(",")
+    .map((value) => value.trim());
 const forbiddenSubjectMetaOpener = /^(?:해당\s*영역|이\s*영역|해당\s*성취기준|제시된\s*성취기준|관련\s*학습\s*내용|이\s*학습\s*내용|해당\s*기준의\s*내용|제시된\s*학습\s*기준|선택한\s*성취기준|이\s*영역의\s*성취기준)(?:을|를|에|과|와|으로|로|에서|의|\s)/u;
 const forbiddenAwkwardSubject = /할 수 있는 (?:수행|과정|모습|능력|역량)|하는 수행이 능숙함|하는 수행 과정이 돋보임|하는 과정에서 강점이|하는 모습을 안정적으로 보임|하는 방법을 이해하고 실제 수행에/u;
 const normalizeSubjectSentence = (value: string) => value
@@ -80,8 +86,8 @@ const safeCallable = {
   minInstances: 0,
   maxInstances: 20,
   concurrency: 20,
-  enforceAppCheck: true,
-  consumeAppCheckToken: true,
+  // App Check 사이트 키가 클라이언트에 설정된 경우에만 강제한다.
+  enforceAppCheck: process.env.ENFORCE_APP_CHECK === "true",
   secrets: [upstageKey],
   cors: origins(),
 };
