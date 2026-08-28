@@ -20,6 +20,7 @@ import type {
   SavedAssessmentPlan,
   SchoolLevel,
   Student,
+  TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
@@ -32,6 +33,8 @@ import { buildSubjectAiRequest } from "./subjectAi";
 const MAX_STANDARDS = 40;
 
 interface ClassSubjectProps {
+  /** 진입 화면에서 고른 학교급·학년. AI 프롬프트 팩 선택에 쓴다. */
+  profile: TeacherProfile;
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
@@ -82,7 +85,7 @@ function StepNav({
 }
 
 /** 명단 × 여러 성취기준 평가표로 학생별 평어를 한 번에 작성하는 화면. */
-export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps) {
+export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSubjectProps) {
   const [step, setStep] = useState(1);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const regenerationSeed = useRef(0);
@@ -341,6 +344,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
             diversificationSeed:
               (students.find((student) => student.id === item.studentId)?.number ?? index) * 101 +
               index,
+            profile,
           }),
         );
         const pool = [...sentenceHistory.current, ...accepted].filter(
@@ -401,6 +405,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
           sentenceLength: "기본",
           usedSentences,
           diversificationSeed: seed + regenerationSeed.current,
+          profile,
         }),
       );
       const repeated = !ai.sentence || isSubjectSentenceTooSimilar(ai.sentence, usedSentences);
@@ -483,6 +488,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
                 sentenceLength: "기본",
                 usedSentences: pool,
                 diversificationSeed: seed,
+                profile,
               }),
             );
             if (ai.sentence && !isSubjectSentenceTooSimilar(ai.sentence, pool)) {

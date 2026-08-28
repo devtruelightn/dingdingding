@@ -7,18 +7,18 @@ import { auth, generateBehaviorWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import { anonymizeText } from "@/lib/privacy";
 import { loadBehaviorWork, saveBehaviorWork } from "@/lib/storage";
 import { createBehaviorSentence, hasAwkwardBehaviorMeta, toRecordStyle, utf8Bytes } from "@/lib/text";
-import type { BehaviorStudentWork, BehaviorWorkState } from "@/types";
+import type { BehaviorStudentWork, BehaviorWorkState, TeacherProfile } from "@/types";
 import { downloadBehaviorWorkbook } from "./behaviorExport";
 import { behaviorMissingCount, createBehaviorStudent, createBehaviorWorkState, migrateBehaviorWork, requiresBehaviorResizeConfirmation, resizeBehaviorWork, updateBehaviorStudent } from "./behaviorWork";
 import { KeywordPicker } from "./components/KeywordPicker";
 import { behaviorDegree, categoryForKeyword } from "./keywords";
 
-interface Props { classMode?: boolean; privacy: boolean; toast: (message: string) => void }
+interface Props { classMode?: boolean; profile: TeacherProfile; privacy: boolean; toast: (message: string) => void }
 type SaveStatus = "saving" | "saved" | "error";
 const styleOptions = ["담백하게", "따뜻하게", "자세하게"] as const;
 
 /** 관찰 근거로 행발을 만들며, 학급 모드에서는 번호별 작업을 자동 저장한다. */
-export function BehaviorBuilder({ classMode = false, toast }: Props) {
+export function BehaviorBuilder({ classMode = false, profile, toast }: Props) {
   const [work, setWork] = useState<BehaviorWorkState>(() => createBehaviorWorkState());
   const [quickWork, setQuickWork] = useState(() => createBehaviorStudent(1));
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
@@ -68,6 +68,8 @@ export function BehaviorBuilder({ classMode = false, toast }: Props) {
     toast("행발 문장을 AI로 생성하고 추론된 사실이 없는지 검증하고 있습니다.");
     try {
       const ai = await generateBehaviorWithAi({
+        // 학교급마다 행발 지침이 달라 서버가 프롬프트 팩을 고를 수 있게 함께 보낸다.
+        stage: profile.schoolLevel,
         anonymousStudentId: classMode ? `class-behavior-${targetNumber}` : `quick-behavior-${crypto.randomUUID()}`,
         entries: target.selectedKeywords.map((keyword) => ({ category: categoryForKeyword(keyword), keyword, degree: target.keywordLevels[keyword] ?? "잘함" })),
         anonymizedTeacherNotes: safeNotes.text, sentenceLength: "기본", style: target.style,

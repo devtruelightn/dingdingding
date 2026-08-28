@@ -172,16 +172,22 @@ export function AppShell() {
   const content = useMemo(() => {
     switch (view) {
       case "behavior":
-        return <BehaviorBuilder classMode={workMode === "class"} privacy={privacy} toast={toast} />;
+        return <BehaviorBuilder classMode={workMode === "class"} profile={profile} privacy={privacy} toast={toast} />;
       case "subject":
         return workMode === "class" ? (
           <ClassSubject
+            profile={profile}
             toast={toast}
             savedPlan={savedPlan}
             onSavePlan={persistAssessmentPlan}
           />
         ) : (
-          <QuickSubject toast={toast} savedPlan={savedPlan} onSavePlan={persistAssessmentPlan} />
+          <QuickSubject
+            profile={profile}
+            toast={toast}
+            savedPlan={savedPlan}
+            onSavePlan={persistAssessmentPlan}
+          />
         );
       case "settings":
         return (
@@ -203,6 +209,7 @@ export function AppShell() {
   }, [
     view,
     workMode,
+    profile,
     toast,
     privacy,
     theme,

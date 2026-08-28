@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { behaviorOutputSchema, behaviorRequestSchema, subjectOutputSchema, subjectRequestSchema } from "../../functions/src/schemas";
+import { standards } from "@/lib/curriculum";
+import { buildSubjectAiRequest } from "@/features/subject-comments/subjectAi";
 
 describe("AI Structured Outputs 계약", () => {
   const subject = {
@@ -25,5 +27,29 @@ describe("AI Structured Outputs 계약", () => {
     const request = { anonymousStudentId: "student-01", entries: [{ category: "생활·인성", keyword: "책임감", degree: "잘함" }], anonymizedTeacherNotes: "", sentenceLength: "기본", style: "따뜻하게", usedAnonymousSentences: [], diversificationSeed: 1 };
     expect(behaviorRequestSchema.safeParse(request).success).toBe(true);
     expect(behaviorRequestSchema.safeParse({ ...request, entries: [{ ...request.entries[0], degree: "안정적으로 나타남" }] }).success).toBe(false);
+  });
+
+  // 프롬프트 팩은 학교급·학년으로 갈리므로 클라이언트가 그 값을 실어 보내야 한다.
+  it("평어 요청에 진입 화면에서 고른 학교급과 학년을 담는다", () => {
+    const standard = standards.find((item) => item.standardCode === "2국01-01")!;
+    const request = buildSubjectAiRequest({
+      anonymousStudentId: "student-01",
+      standard,
+      item: { officialLevel: "A", schoolLevel: "잘함" },
+      sentenceLength: "기본",
+      usedSentences: [],
+      diversificationSeed: 1,
+      profile: { schoolLevel: "middle", grade: 3, role: "subject" },
+    });
+    expect(request.stage).toBe("middle");
+    expect(request.grade).toBe(3);
+    expect(subjectRequestSchema.safeParse(request).success).toBe(true);
+  });
+
+  it("학교급을 보내지 않는 예전 요청도 초등으로 받아들인다", () => {
+    const request = { anonymousStudentId: "student-01", gradeBand: "1-2", subject: "국어", area: "듣기·말하기", standards: [{ id: "2국01-01", code: "2국01-01", text: "중요한 내용을 듣고 말한다." }], officialLevel: "A", officialLevelText: "중요한 내용을 정확하게 파악한다.", schoolLevel: "잘함", sentenceLength: "기본", usedSentences: [], diversificationSeed: 1 };
+    expect(subjectRequestSchema.parse(request).stage).toBe("elementary");
+    const behavior = { anonymousStudentId: "student-01", entries: [{ category: "생활·인성", keyword: "책임감", degree: "잘함" }], anonymizedTeacherNotes: "", sentenceLength: "기본", style: "따뜻하게", usedAnonymousSentences: [], diversificationSeed: 1 };
+    expect(behaviorRequestSchema.parse(behavior).stage).toBe("elementary");
   });
 });

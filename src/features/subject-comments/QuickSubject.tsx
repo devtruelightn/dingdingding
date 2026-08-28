@@ -23,11 +23,14 @@ import type {
   GeneratedSentence,
   SavedAssessmentPlan,
   SchoolLevel,
+  TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 interface QuickSubjectProps {
+  /** 진입 화면에서 고른 학교급·학년. AI 프롬프트 팩 선택에 쓴다. */
+  profile: TeacherProfile;
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
@@ -36,7 +39,7 @@ interface QuickSubjectProps {
 const lengthOptions = ["간결하게", "기본", "자세하게"] as const;
 
 /** 학생 명단 없이 성취기준별 평어 묶음을 만드는 화면. */
-export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps) {
+export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSubjectProps) {
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const [grade, setGrade] = useState(3);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
@@ -152,6 +155,7 @@ export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps
             sentenceLength: length,
             usedSentences: [...sentenceHistory.current, ...accepted],
             diversificationSeed: index,
+            profile,
           }),
         );
         const pool = [...sentenceHistory.current, ...accepted].filter(
@@ -210,6 +214,7 @@ export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps
           sentenceLength: length,
           usedSentences,
           diversificationSeed: regenerationSeed.current,
+          profile,
         }),
       );
       const repeated = !ai.sentence || isSubjectSentenceTooSimilar(ai.sentence, usedSentences);
