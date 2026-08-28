@@ -7,9 +7,13 @@ test.skip(!PLAN_PDF, "PLAN_PDF 환경변수로 평가계획 PDF 경로를 지정
 
 test("평가계획 PDF를 올리면 성취기준이 자동으로 채워진다", async ({ page }) => {
   await page.goto("/");
-  const skip = page.getByRole("button", { name: /건너뛰기/ });
-  if (await skip.isVisible().catch(() => false)) await skip.click();
-  await page.getByRole("button", { name: "우리 반 평어", exact: true }).click();
+  // 학교급 · 역할을 고르는 진입 흐름을 지나 담임의 "우리 반 평어"로 들어간다.
+  await page.getByRole("button", { name: "초등학교" }).click();
+  await page.getByRole("button", { name: "담임" }).click();
+  await page
+    .getByRole("navigation", { name: "주요 메뉴" })
+    .getByRole("button", { name: "평어" })
+    .click();
   await page.getByRole("button", { name: /평가계획 사용/ }).click();
 
   await page.locator('input[type="file"]').setInputFiles(PLAN_PDF);

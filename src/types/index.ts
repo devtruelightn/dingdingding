@@ -53,14 +53,27 @@ export interface GeneratedSentence {
   createdAt: string;
 }
 
+/** 진입 흐름 단계. work 단계에서만 사이드바가 나타난다. */
+export type OnboardingStage = "school" | "profile" | "work";
+
+/** 학교급. 평가단계를 뜻하는 SchoolLevel과 이름이 겹치지 않도록 Stage로 구분한다. */
+export type SchoolStage = "elementary" | "middle" | "high";
+
+/** 담임 / 전담과목·교과 */
+export type TeacherRole = "homeroom" | "subject";
+
+/** 진입 흐름에서 고른 학교급·학년·역할 */
+export interface TeacherProfile {
+  schoolLevel: SchoolStage;
+  grade: number;
+  role: TeacherRole;
+}
+
 /** 사이드바에서 전환하는 최상위 화면 */
-export type View =
-  | "dashboard"
-  | "quick-subject"
-  | "class-subject"
-  | "quick-behavior"
-  | "class-behavior"
-  | "settings";
+export type View = "behavior" | "subject" | "settings";
+
+/** 한 메뉴 안에서 고르는 작업 범위 (명단 없이 빠르게 / 우리 반 전체) */
+export type WorkMode = "quick" | "class";
 
 /** 배경 테마 */
 export type Theme =

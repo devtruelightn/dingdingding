@@ -3,17 +3,32 @@
 import { ShieldCheck, X } from "lucide-react";
 import { IconButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import type { View } from "@/types";
-import { navItems } from "./nav";
+import { roleLabel, schoolStageLabel } from "@/lib/school";
+import type { TeacherProfile, View } from "@/types";
+import { navItemsFor } from "./nav";
 
 interface SidebarProps {
   view: View;
+  profile: TeacherProfile;
   onNavigate: (view: View) => void;
+  onRestart: () => void;
   open: boolean;
   onClose: () => void;
 }
 
-export function Sidebar({ view, onNavigate, open, onClose }: SidebarProps) {
+export function Sidebar({
+  view,
+  profile,
+  onNavigate,
+  onRestart,
+  open,
+  onClose,
+}: SidebarProps) {
+  const context = `${schoolStageLabel[profile.schoolLevel]} ${profile.grade}학년 · ${roleLabel(
+    profile.schoolLevel,
+    profile.role,
+  )}`;
+
   return (
     <aside
       className={cn(
@@ -32,30 +47,31 @@ export function Sidebar({ view, onNavigate, open, onClose }: SidebarProps) {
 
       <button
         className="flex min-h-[52px] items-center gap-3 px-1.5 text-left"
-        onClick={() => onNavigate("dashboard")}
+        onClick={onRestart}
+        title="학교급부터 다시 선택"
       >
         <span
-          className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-[#9c8ce9] text-lg font-black text-white"
+          className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-lg font-black text-white"
           aria-hidden
         >
           <span>평</span>
         </span>
-        <span className="flex flex-col">
+        <span className="flex min-w-0 flex-col">
           <b className="text-lg tracking-tight">평행톡톡</b>
-          <small className="text-[11px] text-muted">교사의 기록 도우미</small>
+          <small className="truncate text-[11px] text-muted">{context}</small>
         </span>
       </button>
 
       <nav className="flex flex-col gap-1.5" aria-label="주요 메뉴">
-        {navItems.map(({ id, label, icon: Icon }) => (
+        {navItemsFor(profile.schoolLevel).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => onNavigate(id)}
             className={cn(
-              "flex min-h-[46px] items-center gap-3 rounded-xl px-3 text-left",
+              "flex min-h-[46px] items-center gap-3 rounded-xl px-3 text-left transition-colors",
               view === id
-                ? "bg-primary-soft font-semibold text-primary-dark"
-                : "text-muted hover:bg-primary-soft/50 hover:text-ink",
+                ? "bg-primary font-semibold text-white shadow-sm"
+                : "text-muted hover:bg-primary-soft/60 hover:text-primary-dark",
             )}
           >
             <Icon size={19} />
