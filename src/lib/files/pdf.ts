@@ -7,8 +7,8 @@ import type { ExtractedPlanRow } from "./types";
  */
 const PDF_WORKER_SRC = "/pdf.worker.min.mjs";
 
-/** PDF에서 성취기준 텍스트를 추출한다. pdfjs-dist는 필요할 때만 로드한다. */
-export const parsePdf = async (buffer: ArrayBuffer): Promise<ExtractedPlanRow[]> => {
+/** PDF의 모든 쪽에서 평문을 뽑는다. pdfjs-dist는 필요할 때만 로드한다. */
+export const extractPdfText = async (buffer: ArrayBuffer): Promise<string> => {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
   const document = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
@@ -23,5 +23,9 @@ export const parsePdf = async (buffer: ArrayBuffer): Promise<ExtractedPlanRow[]>
   if (text.replace(/\s/g, "").length < 30) {
     throw new Error("텍스트가 없는 스캔 PDF입니다. OCR이 가능한 PDF로 변환해 주세요.");
   }
-  return parseExtractedText(text);
+  return text;
 };
+
+/** PDF에서 성취기준 텍스트를 추출한다. */
+export const parsePdf = async (buffer: ArrayBuffer): Promise<ExtractedPlanRow[]> =>
+  parseExtractedText(await extractPdfText(buffer));

@@ -4,7 +4,7 @@ import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
 import { anonymizeText } from "@/lib/privacy";
 import { parseRoster } from "@/lib/roster";
 import { createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
-import { analyzeAssessmentPlan, parseExtractedText } from "@/lib/files";
+import { analyzeAssessmentPlan, parseAssessmentResultText, parseExtractedText, splitEvaluationBlocks } from "@/lib/files";
 
 describe("교육과정 데이터", () => {
   it("611개 코드와 A/B/C 원문을 누락 없이 제공한다", () => {
@@ -195,5 +195,40 @@ describe("평가계획 매핑", () => {
   it("학교가 자체 편성한 긴 과목 코드도 행으로 남긴다", () => {
     const rows = parseExtractedText("[6 국사상 01-01] 글의 구조를 해체하고 편향과 왜곡을 분석한다 .");
     expect(rows[0].standardCode).toBe("6국사상01-01");
+  });
+});
+
+describe("교과평가 결과 읽기", () => {
+  const row = (number: number, name: string, level: string) =>
+    `${number}   ${name} 쓰기 과정을 점검 ⋅ 조정하며 글을 쓴다. 글을 고쳐 쓰고 공 유하기 ${level} 고쳐 쓰기 방법을 적용할 수 있다 . `;
+
+  it("번호·성명·평가단계를 줄 단위로 읽는다", () => {
+    const rows = parseAssessmentResultText(`${row(1, "김서윤", "잘함")}${row(2, "김채원", "보통")}`);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].number).toBe(1);
+    expect(rows[0].name).toBe("김서윤");
+    expect(rows[1].name).toBe("김채원");
+  });
+
+  // 쪽이 넘어가면 한 줄이 여러 조각으로 쪼개지고 번호·성명이 다시 찍힌다.
+  it("쪽 넘김으로 흩어진 조각을 번호로 다시 모은다", () => {
+    const rows = parseAssessmentResultText(
+      `${row(4, "박라미", "잘함")}4   박라미 쓰기 나 느낌을 구체적으로 나눌 수 있다 . ${row(5, "우혜원", "보통")}`,
+    );
+    expect(rows.map((item) => item.number)).toEqual([4, 5]);
+    expect(rows[0].body).toContain("나 느낌을 구체적으로 나눌 수 있다");
+  });
+
+  // 한 학생 줄 안에 영역(쓰기·문법·매체)별 평가가 이어 붙어 나온다.
+  it("한 줄에 들어 있는 영역별 평가를 단계 수만큼 나눈다", () => {
+    const body =
+      "쓰기 쓰기 과정을 점검하며 글을 쓴다. 글을 고쳐 쓰기 잘함 고쳐 쓸 수 있다. " +
+      "문법 고유어와 관용 표현의 쓰임을 이해한다. 속담 찾아내기 보통 속담을 찾을 수 있다. " +
+      "매체 복합양식 매체 자료를 제작하고 공유한다. 제작하기 노력요함 제작할 수 있다.";
+    const blocks = splitEvaluationBlocks(body);
+    expect(blocks.map((block) => block.level)).toEqual(["잘함", "보통", "노력요함"]);
+    expect(blocks[1].segment).toContain("고유어와 관용 표현");
+    // 각 토막은 자기 영역의 성취기준까지만 담아야 한다.
+    expect(blocks[0].segment).not.toContain("고유어");
   });
 });

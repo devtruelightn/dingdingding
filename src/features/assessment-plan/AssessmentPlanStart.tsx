@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import {
   Check,
   ChevronRight,
+  ClipboardCheck,
   Cloud,
   FileSpreadsheet,
   PencilLine,
@@ -25,6 +26,11 @@ interface AssessmentPlanStartProps {
   savedPlan: SavedAssessmentPlan | null;
   onStandardsChange: (selected: CurriculumStandard[]) => void;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
+  /**
+   * 평가결과 파일을 골랐을 때. 종합의견 화면까지 진행하는 쪽에서 처리한다.
+   * 넘기지 않으면 "평가결과 사용" 선택지를 감춘다 (빠른 생성처럼 명단이 없는 화면).
+   */
+  onResultFile?: (file: File) => Promise<void>;
   toast: (message: string) => void;
 }
 
@@ -35,12 +41,25 @@ export function AssessmentPlanStart({
   savedPlan,
   onStandardsChange,
   onSavePlan,
+  onResultFile,
   toast,
 }: AssessmentPlanStartProps) {
   const [rows, setRowsState] = useState<AssessmentPlanRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const resultInput = useRef<HTMLInputElement>(null);
+
+  const readResult = async (file?: File) => {
+    if (!file || !onResultFile) return;
+    setAnalyzing(true);
+    try {
+      await onResultFile(file);
+    } finally {
+      setAnalyzing(false);
+      if (resultInput.current) resultInput.current.value = "";
+    }
+  };
 
   const setRows = (next: AssessmentPlanRow[]) => {
     setRowsState(next);
@@ -110,7 +129,7 @@ export function AssessmentPlanStart({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3.5 sm:grid-cols-2">
+      <div className={cn("mt-4 grid gap-3.5", onResultFile ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
         <button
           type="button"
           aria-pressed={mode === "plan"}
@@ -150,7 +169,56 @@ export function AssessmentPlanStart({
           </span>
           {mode === "manual" && <Check size={16} className="ml-auto text-primary" />}
         </button>
+        {onResultFile && (
+        <button
+          type="button"
+          aria-pressed={mode === "result"}
+          onClick={() => {
+            setMode("result");
+            onStandardsChange([]);
+          }}
+          className={cn(
+            "flex items-center gap-4 rounded-2xl border p-5 text-left",
+            mode === "result" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+          )}
+        >
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+            <ClipboardCheck size={22} />
+          </span>
+          <span className="min-w-0">
+            <b className="block">평가결과 사용</b>
+            <small className="text-xs text-muted">이미 매긴 평가결과로 종합의견 바로 생성</small>
+          </span>
+          {mode === "result" && <Check size={16} className="ml-auto text-primary" />}
+        </button>
+        )}
       </div>
+
+      {mode === "result" && onResultFile && (
+        <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">
+          <div className="flex flex-col items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
+            <p className="text-[11px] text-muted">
+              학교 업무 시스템에서 <b>교과평가(성취기준별)</b> 결과를 PDF로 내려받아 올리면, 학생별
+              평가단계를 읽어 학기말 종합의견까지 한 번에 만들어 드려요.
+            </p>
+            <input
+              ref={resultInput}
+              hidden
+              type="file"
+              accept=".pdf"
+              onChange={(event) => void readResult(event.target.files?.[0])}
+            />
+            <Button
+              variant="primary"
+              disabled={analyzing}
+              onClick={() => resultInput.current?.click()}
+            >
+              {analyzing ? <RefreshCw className="animate-spin-slow" size={16} /> : <Upload size={16} />}
+              {analyzing ? "분석 중" : "평가결과 파일 선택"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {mode === "plan" && (
         <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">

@@ -1,3 +1,5 @@
+import type { CurriculumStandard, SchoolLevel } from "@/types";
+
 export type MatchStatus =
   | "공식 PDF와 정확히 일치"
   | "유사 기준 발견"
@@ -39,6 +41,20 @@ export interface ExtractedPlanRow {
   standardText: string;
   evaluationElement: string;
   timing: string;
+}
+
+/**
+ * 학교 업무 시스템이 내보낸 "교과평가(성취기준별)" 한 줄.
+ * 학생 한 명이 성취기준 한 개에 받은 평가단계를 담는다.
+ */
+export interface AssessmentResultRow {
+  number: number;
+  name: string;
+  schoolLevel: SchoolLevel;
+  /** 업로드 문서에 적힌 성취기준 문구 */
+  uploadedStandardText: string;
+  /** 대조에 성공한 공식 성취기준 (실패하면 undefined) */
+  standard?: CurriculumStandard;
 }
 
 export const MAX_FILE = 20 * 1024 * 1024;
