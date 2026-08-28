@@ -1,11 +1,18 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
+import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
-import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import {
+  defaultSelectionFor,
+  hasCurriculumFor,
+  officialLevelFor,
+  schoolLevelsFor,
+  standards,
+} from "@/lib/curriculum";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import {
   createUniqueGroundedSentence,
@@ -19,6 +26,7 @@ import type {
   SavedAssessmentPlan,
   SchoolLevel,
   Student,
+  TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
@@ -31,6 +39,7 @@ import { buildSubjectAiRequest } from "./subjectAi";
 const MAX_STANDARDS = 40;
 
 interface ClassSubjectProps {
+  profile: TeacherProfile;
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
@@ -81,16 +90,21 @@ function StepNav({
 }
 
 /** 명단 × 여러 성취기준 평가표로 학생별 평어를 한 번에 작성하는 화면. */
-export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps) {
+export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSubjectProps) {
+  // 진입 흐름에서 고른 학교급·학년이 그대로 첫 선택값이 된다.
+  const initial = useMemo(
+    () => defaultSelectionFor(profile.schoolLevel, profile.grade),
+    [profile.schoolLevel, profile.grade],
+  );
   const [step, setStep] = useState(1);
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
   const regenerationSeed = useRef(0);
   const sentenceHistory = useRef<string[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [grade, setGrade] = useState(3);
+  const [grade, setGrade] = useState(initial.grade);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
-  const [subject, setSubject] = useState("국어");
-  const [area, setArea] = useState("듣기·말하기");
+  const [subject, setSubject] = useState(initial.subject);
+  const [area, setArea] = useState(initial.area);
   const [standardId, setStandardId] = useState("");
   const [selectedStandardIds, setSelectedStandardIds] = useState<string[]>([]);
   const [ratings, setRatings] = useState<Record<string, SchoolLevel>>({});
@@ -366,9 +380,23 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     );
   };
 
+  const heading = <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 평어</h1>;
+
+  // 성취기준이 없는 학교급에서는 평가계획 매칭까지 초등 데이터를 쓰게 되므로 흐름 자체를 막는다.
+  if (!hasCurriculumFor(profile.schoolLevel)) {
+    return (
+      <div className="mx-auto max-w-[1120px]">
+        {heading}
+        <GlassPanel>
+          <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
+        </GlassPanel>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[1120px]">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 평어</h1>
+      {heading}
 
       {step === 1 && (
         <GlassPanel>
@@ -415,6 +443,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
                     </div>
                   </div>
                   <CurriculumPicker
+                    schoolLevel={profile.schoolLevel}
                     {...{ grade, setGrade, subject, setSubject, area, setArea, standardId, setStandardId }}
                   />
                   <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between">

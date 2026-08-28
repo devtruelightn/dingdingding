@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import report from "@/data/curriculum-report.json";
-import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import {
+  areasFor,
+  defaultSelectionFor,
+  gradeBandFor,
+  hasCurriculumFor,
+  officialLevelFor,
+  schoolLevelsFor,
+  standards,
+  standardsFor,
+  subjectsFor,
+} from "@/lib/curriculum";
+import { gradesFor } from "@/lib/school";
 import { anonymizeText } from "@/lib/privacy";
 import { parseRoster } from "@/lib/roster";
 import { createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
@@ -18,6 +29,45 @@ describe("교육과정 데이터", () => {
     const subjects = (band: string) => new Set(standards.filter((item) => item.gradeBand === band).map((item) => item.subjectName));
     expect(subjects("1-2")).toEqual(new Set(["국어", "수학", "바른 생활", "슬기로운 생활", "즐거운 생활"]));
     expect(subjects("5-6").has("실과")).toBe(true);
+  });
+});
+
+describe("학교급별 학년·과목", () => {
+  it("초등은 1~6학년, 중·고등은 1~3학년만 고를 수 있다", () => {
+    expect(gradesFor("elementary")).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(gradesFor("middle")).toEqual([1, 2, 3]);
+    expect(gradesFor("high")).toEqual([1, 2, 3]);
+  });
+
+  it("초등만 학년군을 갖고 중·고등은 초등 학년군으로 흘러가지 않는다", () => {
+    expect(hasCurriculumFor("elementary")).toBe(true);
+    expect(gradeBandFor("elementary", 1)).toBe("1-2");
+    expect(gradeBandFor("elementary", 3)).toBe("3-4");
+    expect(gradeBandFor("elementary", 6)).toBe("5-6");
+    for (const schoolLevel of ["middle", "high"] as const) {
+      expect(hasCurriculumFor(schoolLevel)).toBe(false);
+      expect(gradesFor(schoolLevel).map((grade) => gradeBandFor(schoolLevel, grade))).toEqual([
+        null,
+        null,
+        null,
+      ]);
+    }
+  });
+
+  it("학년군이 없으면 과목·평가영역·성취기준을 하나도 내주지 않는다", () => {
+    expect(subjectsFor(null)).toEqual([]);
+    expect(areasFor(null, "국어")).toEqual([]);
+    expect(standardsFor(null, "국어", "듣기·말하기")).toEqual([]);
+  });
+
+  it("작업 화면 기본 선택이 학교급을 따라간다", () => {
+    expect(defaultSelectionFor("elementary", 3)).toEqual({
+      grade: 3,
+      subject: "국어",
+      area: "듣기·말하기",
+    });
+    expect(defaultSelectionFor("middle", 1)).toEqual({ grade: 1, subject: "", area: "" });
+    expect(defaultSelectionFor("high", 3)).toEqual({ grade: 3, subject: "", area: "" });
   });
 });
 

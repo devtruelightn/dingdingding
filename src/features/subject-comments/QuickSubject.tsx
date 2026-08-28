@@ -1,14 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Clipboard, Download, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
+import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, GlassPanel, PageHeading, Segmented } from "@/components/ui";
 import {
   AssessmentPlanStart,
   type PlanSetupMode,
 } from "@/features/assessment-plan";
-import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import {
+  defaultSelectionFor,
+  hasCurriculumFor,
+  officialLevelFor,
+  schoolLevelsFor,
+  standards,
+} from "@/lib/curriculum";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import { downloadText } from "@/lib/download";
 import { cn } from "@/lib/cn";
@@ -23,11 +30,13 @@ import type {
   GeneratedSentence,
   SavedAssessmentPlan,
   SchoolLevel,
+  TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 interface QuickSubjectProps {
+  profile: TeacherProfile;
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
   onSavePlan: (plan: SavedAssessmentPlan) => Promise<void>;
@@ -36,12 +45,17 @@ interface QuickSubjectProps {
 const lengthOptions = ["간결하게", "기본", "자세하게"] as const;
 
 /** 학생 명단 없이 성취기준별 평어 묶음을 만드는 화면. */
-export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps) {
+export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSubjectProps) {
+  // 진입 흐름에서 고른 학교급·학년이 그대로 첫 선택값이 된다.
+  const initial = useMemo(
+    () => defaultSelectionFor(profile.schoolLevel, profile.grade),
+    [profile.schoolLevel, profile.grade],
+  );
   const [planMode, setPlanMode] = useState<PlanSetupMode>("choose");
-  const [grade, setGrade] = useState(3);
+  const [grade, setGrade] = useState(initial.grade);
   const [levelCount, setLevelCount] = useState<3 | 4 | 5>(3);
-  const [subject, setSubject] = useState("국어");
-  const [area, setArea] = useState("듣기·말하기");
+  const [subject, setSubject] = useState(initial.subject);
+  const [area, setArea] = useState(initial.area);
   const [standardId, setStandardId] = useState("");
   const [length, setLength] = useState<string>("기본");
   const [counts, setCounts] = useState<Record<string, number>>({ 잘함: 3, 보통: 2, 노력요함: 1 });
@@ -241,14 +255,30 @@ export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps
     ? results.filter((item) => item.schoolLevel === activeResultLevel)
     : results;
 
+  const heading = (
+    <PageHeading
+      eyebrow="교과평어"
+      title="평어 빠른 생성"
+      description="학생 명단 없이 성취기준별 문장 묶음을 만듭니다."
+      icon={WandSparkles}
+    />
+  );
+
+  // 성취기준이 없는 학교급에서는 평가계획 매칭까지 초등 데이터를 쓰게 되므로 흐름 자체를 막는다.
+  if (!hasCurriculumFor(profile.schoolLevel)) {
+    return (
+      <div className="mx-auto max-w-[1120px]">
+        {heading}
+        <GlassPanel>
+          <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
+        </GlassPanel>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[1120px]">
-      <PageHeading
-        eyebrow="교과평어"
-        title="평어 빠른 생성"
-        description="학생 명단 없이 성취기준별 문장 묶음을 만듭니다."
-        icon={WandSparkles}
-      />
+      {heading}
       <GlassPanel>
         <AssessmentPlanStart
           mode={planMode}
@@ -297,6 +327,7 @@ export function QuickSubject({ toast, savedPlan, onSavePlan }: QuickSubjectProps
               </label>
             ) : (
               <CurriculumPicker
+                schoolLevel={profile.schoolLevel}
                 {...{ grade, setGrade, subject, setSubject, area, setArea, standardId, setStandardId }}
               />
             )}

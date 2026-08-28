@@ -165,12 +165,18 @@ export function AppShell() {
       case "subject":
         return workMode === "class" ? (
           <ClassSubject
+            profile={profile}
             toast={toast}
             savedPlan={savedPlan}
             onSavePlan={persistAssessmentPlan}
           />
         ) : (
-          <QuickSubject toast={toast} savedPlan={savedPlan} onSavePlan={persistAssessmentPlan} />
+          <QuickSubject
+            profile={profile}
+            toast={toast}
+            savedPlan={savedPlan}
+            onSavePlan={persistAssessmentPlan}
+          />
         );
       case "settings":
         return (
@@ -192,6 +198,7 @@ export function AppShell() {
   }, [
     view,
     workMode,
+    profile,
     toast,
     privacy,
     theme,
