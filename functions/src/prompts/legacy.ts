@@ -1,5 +1,9 @@
-export const SUBJECT_PROMPT_VERSION = "subject-v1.5.0";
-export const BEHAVIOR_PROMPT_VERSION = "behavior-v1.3.0";
+// 학교급·교과 프롬프트 팩(`./index.ts`의 selectPrompt)이 담당하지 않는 조합의 폴백이다.
+// 예: 중학교 국어처럼 아직 팩이 없는 학교급·교과 조합.
+// verificationSystemPrompt 는 팩과 무관한 별도 검증기 프롬프트이므로 폴백이 아니라 상시 사용된다.
+
+export const SUBJECT_PROMPT_VERSION = "subject-v1.6.0";
+export const BEHAVIOR_PROMPT_VERSION = "behavior-v1.4.0";
 
 export const subjectSystemPrompt = `너는 대한민국 초등학교 교과학습발달상황 초안 작성 도우미이다.
 제공된 성취기준 원문과 제공된 해당 A·B·C 수준 원문만 교육내용 근거로 사용한다.

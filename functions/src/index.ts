@@ -18,10 +18,10 @@ import { assertAuthenticated, assertSafeText, consumeQuota } from "./security.js
 import {
   BEHAVIOR_PROMPT_VERSION,
   SUBJECT_PROMPT_VERSION,
-  behaviorSystemPrompt,
-  subjectSystemPrompt,
+  promptVersionWithPack,
+  selectPrompt,
   verificationSystemPrompt,
-} from "./prompts.js";
+} from "./prompts/index.js";
 
 initializeApp();
 
@@ -99,10 +99,20 @@ export const generateSubjectComment = onCall(safeCallable, async (request) => {
   const input: SubjectRequest = parsed.data;
   assertSafeText([input.subject, input.area, input.officialLevelText, ...input.standards.flatMap((item) => [item.code, item.text])]);
   await consumeQuota(uid);
+  const prompt = await selectPrompt({
+    stage: input.stage,
+    task: "subject",
+    subject: input.subject,
+    area: input.area,
+    gradeBand: input.gradeBand,
+    grade: input.grade,
+    officialLevel: input.officialLevel,
+  });
+  const promptVersion = promptVersionWithPack(SUBJECT_PROMPT_VERSION, prompt.packId);
   const client = upstageClient();
   let lastReason = "근거 검증을 통과하지 못했습니다.";
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const candidateRaw = await callStructured<unknown>(client, "subject_comment", subjectJsonSchema, subjectSystemPrompt, { ...input, attempt, correction: attempt ? lastReason : undefined });
+    const candidateRaw = await callStructured<unknown>(client, "subject_comment", subjectJsonSchema, prompt.system, { ...input, attempt, correction: attempt ? lastReason : undefined });
     const candidate = subjectOutputSchema.safeParse(candidateRaw);
     if (!candidate.success) { lastReason = "응답 구조가 계약과 일치하지 않습니다."; continue; }
     const requestedIds = input.standards.map((item) => item.id).sort();
@@ -125,9 +135,9 @@ export const generateSubjectComment = onCall(safeCallable, async (request) => {
       lastReason = verification.success ? verification.data.reviewReason || "선택한 성취기준 밖의 주장이 감지되었습니다." : "근거 검증 결과 형식이 올바르지 않습니다.";
       continue;
     }
-    return { ...candidate.data, grounded: true, introducedClaims: [], needsReview: candidate.data.needsReview || verification.data.needsReview, reviewReason: candidate.data.reviewReason || verification.data.reviewReason, promptVersion: SUBJECT_PROMPT_VERSION };
+    return { ...candidate.data, grounded: true, introducedClaims: [], needsReview: candidate.data.needsReview || verification.data.needsReview, reviewReason: candidate.data.reviewReason || verification.data.reviewReason, promptVersion };
   }
-  return { sentence: "", standardIds: input.standards.map((item) => item.id), officialLevel: input.officialLevel, schoolLevel: input.schoolLevel, grounded: false, introducedClaims: [], needsReview: true, reviewReason: lastReason, promptVersion: SUBJECT_PROMPT_VERSION };
+  return { sentence: "", standardIds: input.standards.map((item) => item.id), officialLevel: input.officialLevel, schoolLevel: input.schoolLevel, grounded: false, introducedClaims: [], needsReview: true, reviewReason: lastReason, promptVersion };
 });
 
 export const generateBehaviorComment = onCall(safeCallable, async (request) => {
@@ -137,10 +147,15 @@ export const generateBehaviorComment = onCall(safeCallable, async (request) => {
   const input: BehaviorRequest = parsed.data;
   assertSafeText([input.anonymizedTeacherNotes, ...input.entries.flatMap((item) => [item.category, item.keyword])]);
   await consumeQuota(uid);
+  const prompt = await selectPrompt({ stage: input.stage, task: "behavior" });
   const client = upstageClient();
-  const raw = await callStructured<unknown>(client, "behavior_comment", behaviorJsonSchema, behaviorSystemPrompt, input);
+  const raw = await callStructured<unknown>(client, "behavior_comment", behaviorJsonSchema, prompt.system, input);
   const result = behaviorOutputSchema.safeParse(raw);
   if (!result.success) throw new HttpsError("internal", "AI 응답 검증에 실패했습니다.");
   assertSafeText([...result.data.snippets, result.data.finalParagraph]);
-  return { ...result.data, needsReview: result.data.needsReview || result.data.inferredClaims.length > 0, promptVersion: BEHAVIOR_PROMPT_VERSION };
+  return {
+    ...result.data,
+    needsReview: result.data.needsReview || result.data.inferredClaims.length > 0,
+    promptVersion: promptVersionWithPack(BEHAVIOR_PROMPT_VERSION, prompt.packId),
+  };
 });

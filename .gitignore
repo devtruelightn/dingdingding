@@ -24,6 +24,9 @@ pubsub-debug.log
 # functions build output
 /functions/lib
 
+# functions prompt modules (generated from src/prompts/**/*.md)
+/functions/src/prompts/generated
+
 # firebase emulator data / local secrets
 /.emulator-data/
 /functions/.env

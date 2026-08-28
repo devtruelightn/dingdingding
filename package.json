@@ -16,6 +16,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "pretypecheck": "node functions/tools/generate-prompts.mjs",
     "typecheck": "tsc --noEmit && tsc -p functions/tsconfig.json --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
