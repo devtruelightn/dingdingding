@@ -11,10 +11,9 @@ interface SidebarProps {
   onNavigate: (view: View) => void;
   open: boolean;
   onClose: () => void;
-  onOpenTutorial: () => void;
 }
 
-export function Sidebar({ view, onNavigate, open, onClose, onOpenTutorial }: SidebarProps) {
+export function Sidebar({ view, onNavigate, open, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
@@ -65,19 +64,7 @@ export function Sidebar({ view, onNavigate, open, onClose, onOpenTutorial }: Sid
         ))}
       </nav>
 
-      <div className="mt-auto rounded-2xl border border-line bg-primary-soft/60 p-4">
-        <span className="text-xl">💡</span>
-        <b className="mt-1 block">처음이신가요?</b>
-        <p className="my-2 text-xs text-muted">3분이면 사용법을 익힐 수 있어요.</p>
-        <button
-          onClick={onOpenTutorial}
-          className="text-xs font-semibold text-primary-dark"
-        >
-          튜토리얼 보기
-        </button>
-      </div>
-
-      <div className="flex items-center gap-2 rounded-xl bg-solid/55 p-2.5 text-success">
+      <div className="mt-auto flex items-center gap-2 rounded-xl bg-solid/55 p-2.5 text-success">
         <ShieldCheck size={16} />
         <span className="flex flex-col">
           <b className="text-[11px]">공식 자료 연결</b>

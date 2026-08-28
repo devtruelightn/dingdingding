@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Toast } from "@/components/ui";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import { ConfigBanner } from "./ConfigBanner";
 import { Dashboard } from "@/features/dashboard/Dashboard";
 import { BehaviorBuilder } from "@/features/behavior-comments";
 import { ClassSubject, QuickSubject } from "@/features/subject-comments";
@@ -23,7 +22,6 @@ import {
 } from "@/lib/firebase";
 import {
   isSavedAssessmentPlan,
-  isTutorialDone,
   loadStoredAssessmentPlan,
   markTutorialDone,
   saveLastView,
@@ -53,7 +51,6 @@ export function AppShell() {
 
   // 클라이언트에서만 읽는 초기 상태 (하이드레이션 안전)
   useEffect(() => {
-    setTutorial(!isTutorialDone());
     setSavedPlan(loadStoredAssessmentPlan());
   }, []);
 
@@ -208,7 +205,6 @@ export function AppShell() {
         onNavigate={navigate}
         open={mobileNav}
         onClose={() => setMobileNav(false)}
-        onOpenTutorial={() => setTutorial(true)}
       />
       {mobileNav && (
         <button
@@ -231,7 +227,6 @@ export function AppShell() {
           signingIn={signingIn}
           user={user}
         />
-        <ConfigBanner />
         <div className="mx-auto w-[min(1260px,calc(100%-2rem))] py-9 sm:py-10">{content}</div>
       </main>
 
