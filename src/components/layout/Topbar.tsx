@@ -92,12 +92,12 @@ export function Topbar({
             onClick={onSignOut}
             title="로그아웃"
           >
-            <span className="grid size-8 place-items-center overflow-hidden rounded-lg bg-primary-soft">
+            <span className="grid size-8 place-items-center overflow-hidden rounded-lg bg-primary-soft text-xs font-bold">
               {user.photoURL ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.photoURL} alt="" className="size-full object-cover" />
               ) : (
-                user.displayName?.[0]
+                (user.displayName?.[0] ?? "선")
               )}
             </span>
             <b className="max-sm:hidden">{user.displayName ?? "선생님"}</b>
@@ -105,7 +105,7 @@ export function Topbar({
           </button>
         ) : (
           <Button
-            className="bg-ink text-solid"
+            variant="dark"
             disabled={signingIn}
             onClick={onSignIn}
           >
