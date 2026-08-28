@@ -24,6 +24,11 @@ pubsub-debug.log
 # functions build output
 /functions/lib
 
+# firebase emulator data / local secrets
+/.emulator-data/
+/functions/.env
+/functions/.secret.local
+
 # testing
 /coverage
 /playwright-report

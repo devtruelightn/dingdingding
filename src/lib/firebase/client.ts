@@ -6,9 +6,9 @@ import {
   initializeAppCheck,
   type AppCheck,
 } from "firebase/app-check";
-import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getFunctions, type Functions } from "firebase/functions";
+import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
+import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
+import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const configuredAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
@@ -62,3 +62,23 @@ export { appCheck };
 export const auth: Auth | null = app ? getAuth(app) : null;
 export const firestore: Firestore | null = app ? getFirestore(app) : null;
 export const functions: Functions | null = app ? getFunctions(app, FUNCTIONS_REGION) : null;
+
+/** 로컬 개발 시 Firebase 에뮬레이터에 연결한다 (NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true). */
+export const isUsingEmulator =
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true" && typeof window !== "undefined";
+
+declare global {
+  var __firebaseEmulatorsConnected: boolean | undefined;
+}
+
+if (isUsingEmulator && !globalThis.__firebaseEmulatorsConnected) {
+  globalThis.__firebaseEmulatorsConnected = true;
+  const host = "127.0.0.1";
+  try {
+    if (auth) connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
+    if (firestore) connectFirestoreEmulator(firestore, host, 8080);
+    if (functions) connectFunctionsEmulator(functions, host, 5001);
+  } catch (error) {
+    console.warn("Firebase 에뮬레이터 연결 실패", error);
+  }
+}
