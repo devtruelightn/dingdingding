@@ -10,6 +10,8 @@
   "scripts": {
     "predev": "node tools/copy-pdf-worker.mjs",
     "dev": "next dev",
+    "emulators": "npm --prefix functions run build && firebase emulators:start",
+    "dev:local": "node tools/copy-pdf-worker.mjs && npm --prefix functions run build && firebase emulators:exec --ui \"next dev\"",
     "prebuild": "node tools/copy-pdf-worker.mjs",
     "build": "next build",
     "start": "next start",

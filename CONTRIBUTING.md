@@ -20,6 +20,30 @@ npm test
 UI 변경 시 `npm run dev` 로 미리보기 모드(로그인 없이)에서 동작을 확인하고,
 가능하면 스크린샷을 첨부하세요.
 
+## 로컬에서 전체 스택 실행 (배포 없이)
+
+로그인 · Firestore · AI(Cloud Functions)까지 로컬에서 확인하려면 Firebase 에뮬레이터를 씁니다.
+운영 프로젝트에 **배포하지 않고** 내 컴퓨터에서만 돕니다.
+
+```bash
+# 1. 최초 1회
+cp .env.example .env.local                 # Firebase 웹 설정값 입력
+cp functions/.env.example functions/.env.local   # UPSTAGE_API_KEY 입력
+npm install && npm --prefix functions install
+
+# 2. .env.local 에서 아래를 켠다
+#    NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true
+
+# 3. 실행 (에뮬레이터 + next dev 동시 기동, Ctrl+C 로 종료)
+npm run dev:local
+```
+
+- 앱: http://localhost:3000 · 에뮬레이터 UI: http://localhost:4000
+- 에뮬레이터는 Auth(9099) / Firestore(8080) / Functions(5001) / Storage(9199) 를 띄웁니다.
+- 에뮬레이터 Auth 에서는 실제 Google 계정 대신 UI 에서 테스트 계정을 만들어 로그인합니다.
+- `npm run emulators` 만 따로 실행하고 다른 터미널에서 `npm run dev` 를 돌려도 됩니다.
+- 배포는 관리자만 `main` 병합 후 진행합니다. 작업자는 배포 명령(`npm run deploy*`)을 쓰지 않습니다.
+
 ## 새 기능은 어디에 추가하나요?
 
 `src/features/<기능이름>/` 폴더를 만들고 그 안에서 완결합니다.
