@@ -4,17 +4,33 @@ import type { PerformanceRow } from "@/lib/files";
  * 항목 이름이 가리키는 수행 동사. 학생이 그 칸에서 실제로 한 일을 나타낸다.
  * 새로운 사실을 보태지 않도록 동사만 정하고, 내용은 학생 글에서 가져온다.
  */
-const ASPECT_VERBS: [RegExp, string][] = [
-  [/개념|원리|정의/u, "정리함"],
-  [/진화|발전|변화|동향/u, "설명함"],
-  [/영향|사회|활용|사례/u, "분석함"],
-  [/한계|비판|문제|쟁점/u, "짚어냄"],
-  [/진로|연계|전공|미래/u, "연결지어 서술함"],
-  [/소감|성찰|느낀/u, "밝힘"],
+const ASPECT_VERBS: [RegExp, string[]][] = [
+  [/개념|원리|정의/u, ["정리함", "체계적으로 정리함", "개념을 명확히 설명함"]],
+  [/진화|발전|변화|동향/u, ["설명함", "흐름을 따라 설명함", "발전 과정을 짚어 설명함"]],
+  [/영향|사회|활용|사례/u, ["분석함", "사례를 들어 분석함", "구체적으로 분석함"]],
+  [/한계|비판|문제|쟁점/u, ["짚어냄", "비판적으로 짚어냄", "근거를 들어 지적함"]],
+  [/진로|연계|전공|미래/u, ["연결지어 서술함", "진로와 연결지어 풀어냄", "자신의 관심과 연결해 서술함"]],
+  [/소감|성찰|느낀/u, ["밝힘", "성찰한 내용을 밝힘", "배운 점을 정리해 밝힘"]],
 ];
 
-const verbFor = (label: string) =>
-  ASPECT_VERBS.find(([pattern]) => pattern.test(label))?.[1] ?? "정리함";
+const DEFAULT_VERBS = ["정리함", "구체적으로 정리함", "핵심을 짚어 정리함"];
+
+const verbFor = (label: string, variant: number) => {
+  const options = ASPECT_VERBS.find(([pattern]) => pattern.test(label))?.[1] ?? DEFAULT_VERBS;
+  return options[variant % options.length];
+};
+
+const OPENINGS = [
+  (topic: string) => `'${topic}'${particleFor(topic, "을", "를")} 주제로 탐구함.`,
+  (topic: string) => `'${topic}'${particleFor(topic, "을", "를")} 주제로 선택해 스스로 조사함.`,
+  (topic: string) => `'${topic}'${particleFor(topic, "을", "를")} 주제로 삼아 자료를 찾아 정리함.`,
+];
+
+const CLOSINGS = [
+  (career: string) => `희망 진로인 ${career} 분야와 연결지어 탐구를 확장함.`,
+  (career: string) => `${career} 분야로의 진로와 연결지어 배운 내용을 넓힘.`,
+  (career: string) => `관심 분야인 ${career}와 이어지는 지점을 스스로 찾아냄.`,
+];
 
 /**
  * 받침 유무로 조사만 고른다.
@@ -95,9 +111,12 @@ const dropDanglingTail = (text: string) =>
  * 온전한 문장 단위로만 담고, 첫 문장부터 예산을 넘으면 쉼표 같은 절 경계에서
  * 끊는다. 글자 수만 보고 자르면 "컴퓨터가"처럼 말이 끊긴 채 남는다.
  */
-const condense = (text: string, budget: number) => {
+const condense = (text: string, budget: number, offset = 0) => {
   const flat = text.replace(/\s+/gu, " ").trim();
-  const sentences = flat.split(/(?<=[.!?])\s+/u).filter(Boolean);
+  const all = flat.split(/(?<=[.!?])\s+/u).filter(Boolean);
+  // 다시 생성할 때 다른 대목이 뽑히도록 시작 문장을 옮긴다.
+  const start = all.length > 1 ? offset % all.length : 0;
+  const sentences = [...all.slice(start), ...all.slice(0, start)];
   const picked: string[] = [];
   for (const sentence of sentences) {
     const next = [...picked, sentence].join(" ");
@@ -123,6 +142,8 @@ const condense = (text: string, budget: number) => {
 export interface PerformanceDraftOptions {
   /** 한 학생 세특의 목표 길이(글자). NEIS 과세특 한도 안에 들도록 잡는다. */
   totalBudget?: number;
+  /** 다시 생성할 때마다 올리는 값. 뽑는 대목과 서술 동사를 바꾼다. */
+  variant?: number;
 }
 
 /**
@@ -133,22 +154,21 @@ export interface PerformanceDraftOptions {
  */
 export const createPerformanceDraft = (
   row: PerformanceRow,
-  { totalBudget = 520 }: PerformanceDraftOptions = {},
+  { totalBudget = 520, variant = 0 }: PerformanceDraftOptions = {},
 ): string => {
   const filled = row.aspects.filter((aspect) => !isBlank(aspect.text));
   if (!filled.length) return "";
 
   const career = cleanCareer(row.career);
-  const opening = row.topic
-    ? `'${row.topic}'${particleFor(row.topic, "을", "를")} 주제로 탐구함. `
-    : "";
-  const closing = career && !/^-+$/u.test(career) ? ` 희망 진로인 ${career} 분야와 연결지어 탐구를 확장함.` : "";
+  const opening = row.topic ? `${OPENINGS[variant % OPENINGS.length](row.topic)} ` : "";
+  const closing =
+    career && !/^-+$/u.test(career) ? ` ${CLOSINGS[variant % CLOSINGS.length](career)}` : "";
   const perAspect = Math.max(50, Math.floor((totalBudget - opening.length - closing.length) / filled.length) - 14);
 
-  const clauses = filled.map((aspect) => {
-    const body = condense(aspect.text, perAspect);
+  const clauses = filled.map((aspect, index) => {
+    const body = condense(aspect.text, perAspect, variant ? variant + index : 0);
     const label = `${aspect.label}${particleFor(aspect.label, "을", "를")}`;
-    return `${body} 등 ${label} ${verbFor(aspect.label)}.`;
+    return `${body} 등 ${label} ${verbFor(aspect.label, variant)}.`;
   });
 
   return `${opening}${clauses.join(" ")}${closing}`.replace(/\s+/gu, " ").trim();

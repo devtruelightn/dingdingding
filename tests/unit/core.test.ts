@@ -290,3 +290,33 @@ describe("수행평가 세특", () => {
     expect(particleFor("기술의 진화(AI 융합)", "을", "를")).toBe("을");
   });
 });
+
+describe("수행평가 세특 다시 생성", () => {
+  const row = {
+    number: 1,
+    career: "미생물학자",
+    topic: "패턴 인식",
+    aspects: [
+      {
+        label: "개념 및 원리",
+        text: "특징을 추출해 분류하는 알고리즘이다. 원시데이터에서 특징을 뽑아 학습한다. 학습한 모델을 일반화한다.",
+      },
+    ],
+  };
+
+  it("변형을 올리면 서로 다른 초안이 나온다", () => {
+    const drafts = [0, 1, 2].map((variant) => createPerformanceDraft(row, { variant }));
+    expect(new Set(drafts).size).toBe(3);
+    // 무엇을 바꾸든 학생이 쓴 내용 안에서만 골라야 한다.
+    drafts.forEach((draft) => {
+      expect(draft).toContain("패턴 인식");
+      expect(draft).toMatch(/알고리즘임|특징을 뽑아 학습함|일반화함/u);
+    });
+  });
+
+  it("변형이 같으면 같은 초안을 낸다", () => {
+    expect(createPerformanceDraft(row, { variant: 2 })).toBe(
+      createPerformanceDraft(row, { variant: 2 }),
+    );
+  });
+});

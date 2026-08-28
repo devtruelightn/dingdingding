@@ -1,12 +1,16 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { BookOpen, Clipboard, Plus, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
-import { analyzeAssessmentResults, analyzePerformanceFile } from "@/lib/files";
+import {
+  analyzeAssessmentResults,
+  analyzePerformanceFile,
+  type PerformanceRow,
+} from "@/lib/files";
 import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import {
@@ -14,7 +18,6 @@ import {
   createUniqueGroundedSentence,
   isSubjectSentenceTooSimilar,
   normalizeSentence,
-  utf8Bytes,
 } from "@/lib/text";
 import type {
   CurriculumStandard,
@@ -25,6 +28,7 @@ import type {
   TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
+import { StudentDraftList } from "./components/StudentDraftList";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 /**
@@ -108,6 +112,9 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
   const [regeneratingId, setRegeneratingId] = useState("");
   /** 결과 화면이 무엇으로 만들어졌는지. 제목과 안내 문구가 달라진다. */
   const [summaryKind, setSummaryKind] = useState<"comment" | "performance">("comment");
+  /** 수행평가 원본 행. 학생별 다시 생성에 그대로 다시 쓴다. */
+  const performanceRows = useRef<Map<string, PerformanceRow>>(new Map());
+  const performanceVariant = useRef<Map<string, number>>(new Map());
 
   const selectedStandards = selectedStandardIds
     .map((id) => standards.find((item) => item.standardId === id))
@@ -212,6 +219,8 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
     if (!drafts.length) {
       return toast("학생이 작성한 내용을 찾지 못했습니다.");
     }
+    performanceRows.current = new Map(rows.map((row) => [`s-${row.number}`, row]));
+    performanceVariant.current = new Map();
     // 이름은 담지 않는다. 화면에도 파일에도 번호만 쓴다.
     setStudents(drafts.map((draft) => ({ id: `s-${draft.number}`, number: draft.number, name: `${draft.number}번` })));
     setSelectedStandardIds([]);
@@ -220,6 +229,18 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
     setSummaryKind("performance");
     setStep(5);
     toast(`${drafts.length}명의 수행평가 자료로 세특 초안을 만들었습니다.`);
+  };
+
+  /** 수행평가 초안을 그 학생 자료로만 다시 만든다. 뽑는 대목과 서술이 달라진다. */
+  const regeneratePerformance = (student: Student) => {
+    const row = performanceRows.current.get(student.id);
+    if (!row) return toast("이 학생의 수행평가 자료를 찾지 못했습니다.");
+    const variant = (performanceVariant.current.get(student.id) ?? 0) + 1;
+    performanceVariant.current.set(student.id, variant);
+    const text = createPerformanceDraft(row, { variant });
+    if (!text) return toast("다시 만들 내용이 없습니다.");
+    setSummary((current) => ({ ...current, [student.id]: text }));
+    toast(`${student.number}번 세특 초안을 다시 만들었습니다.`);
   };
 
   /**
@@ -586,7 +607,10 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 {menuLabel}</h1>
+      {/* 결과 화면은 자체 제목이 있어 페이지 제목이 겹친다. */}
+      {step !== 5 && (
+        <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 {menuLabel}</h1>
+      )}
 
       {step === 1 && (
         <GlassPanel>
@@ -905,50 +929,20 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                 : "새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다."}
             </p>
           </div>
-          <div className="flex flex-col gap-3">
-            {students
-              .filter((student) => summary[student.id])
-              .map((student) => (
-                <div
-                  key={student.id}
-                  className="grid items-start gap-2.5 sm:grid-cols-[140px_1fr_auto]"
-                >
-                  <div className="flex flex-col">
-                    <b>{student.number}번</b>
-                    <span className="text-[10px] text-muted">
-                      {summary[student.id].length}자 · {utf8Bytes(summary[student.id])}바이트
-                    </span>
-                  </div>
-                  <textarea
-                    className="min-h-[88px] leading-relaxed"
-                    value={summary[student.id]}
-                    aria-label={`${student.number}번 학기말 종합의견`}
-                    onChange={(event) =>
-                      setSummary({ ...summary, [student.id]: event.target.value })
-                    }
-                  />
-                  <div className="flex gap-1.5 sm:flex-col">
-                    <Button variant="ghost" size="sm" onClick={() => copy(summary[student.id])}>
-                      <Clipboard size={14} /> 복사
-                    </Button>
-                    {summaryKind === "comment" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={regeneratingId === student.id}
-                      onClick={() => void regenerateSummary(student)}
-                    >
-                      <RefreshCw
-                        size={14}
-                        className={regeneratingId === student.id ? "animate-spin-slow" : undefined}
-                      />
-                      {regeneratingId === student.id ? "생성 중" : "다시 생성"}
-                    </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-          </div>
+          <StudentDraftList
+            numbers={students}
+            texts={summary}
+            label={summaryKind === "performance" ? menuLabel : "학기말 종합의견"}
+            busyId={regeneratingId}
+            onChange={(id, value) => setSummary((current) => ({ ...current, [id]: value }))}
+            onCopy={copy}
+            onRegenerate={(entry) => {
+              const student = students.find((item) => item.id === entry.id);
+              if (!student) return;
+              if (summaryKind === "performance") regeneratePerformance(student);
+              else void regenerateSummary(student);
+            }}
+          />
         </section>
       )}
     </div>

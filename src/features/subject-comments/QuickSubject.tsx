@@ -9,11 +9,13 @@ import {
   type PlanSetupMode,
 } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
+import { analyzePerformanceFile, type PerformanceRow } from "@/lib/files";
 import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import { downloadText } from "@/lib/download";
 import { cn } from "@/lib/cn";
 import {
+  createPerformanceDraft,
   createUniqueGroundedSentence,
   csvCell,
   isSubjectSentenceTooSimilar,
@@ -27,6 +29,7 @@ import type {
   TeacherProfile,
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
+import { StudentDraftList } from "./components/StudentDraftList";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 interface QuickSubjectProps {
@@ -56,6 +59,44 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
   const [planStandardIds, setPlanStandardIds] = useState<string[]>([]);
   const regenerationSeed = useRef(0);
   const sentenceHistory = useRef<string[]>([]);
+  /** 수행평가 자료로 만든 학생별 세특 초안 (고등학교에서만 쓴다). */
+  const [performanceDrafts, setPerformanceDrafts] = useState<Record<string, string>>({});
+  const [performanceNumbers, setPerformanceNumbers] = useState<{ id: string; number: number }[]>([]);
+  const performanceRows = useRef<Map<string, PerformanceRow>>(new Map());
+  const performanceVariant = useRef<Map<string, number>>(new Map());
+
+  /** 수행평가 정리 파일을 읽어 학생이 쓴 내용만으로 세특 초안을 만든다. */
+  const usePerformanceFile = async (file: File) => {
+    let rows;
+    try {
+      rows = await analyzePerformanceFile(file);
+    } catch (error) {
+      return toast(error instanceof Error ? error.message : "수행평가 파일을 분석하지 못했습니다.");
+    }
+    const drafts = rows
+      .map((row) => ({ row, text: createPerformanceDraft(row) }))
+      .filter((draft) => draft.text);
+    if (!drafts.length) return toast("학생이 작성한 내용을 찾지 못했습니다.");
+    performanceRows.current = new Map(drafts.map(({ row }) => [`s-${row.number}`, row]));
+    performanceVariant.current = new Map();
+    // 이름은 담지 않는다. 번호만 쓴다.
+    setPerformanceNumbers(drafts.map(({ row }) => ({ id: `s-${row.number}`, number: row.number })));
+    setPerformanceDrafts(
+      Object.fromEntries(drafts.map(({ row, text }) => [`s-${row.number}`, text])),
+    );
+    toast(`${drafts.length}명의 수행평가 자료로 세특 초안을 만들었습니다.`);
+  };
+
+  const regeneratePerformance = (entry: { id: string; number: number }) => {
+    const row = performanceRows.current.get(entry.id);
+    if (!row) return;
+    const variant = (performanceVariant.current.get(entry.id) ?? 0) + 1;
+    performanceVariant.current.set(entry.id, variant);
+    const text = createPerformanceDraft(row, { variant });
+    if (!text) return;
+    setPerformanceDrafts((current) => ({ ...current, [entry.id]: text }));
+    toast(`${entry.number}번 세특 초안을 다시 만들었습니다.`);
+  };
 
   const standard = standards.find((item) => item.standardId === standardId);
   const planStandards = planStandardIds
@@ -264,6 +305,9 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
           savedPlan={savedPlan}
           onStandardsChange={handlePlanStandards}
           onSavePlan={onSavePlan}
+          onPerformanceFile={
+            profile.schoolLevel === "high" ? usePerformanceFile : undefined
+          }
           toast={toast}
         />
         {planMode !== "choose" && (planMode === "manual" || planStandards.length > 0) && (
@@ -367,6 +411,28 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
           </div>
         )}
       </GlassPanel>
+
+      {performanceNumbers.length > 0 && (
+        <section className="mt-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">학생별 {menuLabel}</h2>
+            <p className="mt-1 text-muted">
+              학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어
+              쓰세요.
+            </p>
+          </div>
+          <StudentDraftList
+            numbers={performanceNumbers}
+            texts={performanceDrafts}
+            label={menuLabel}
+            onChange={(id, value) =>
+              setPerformanceDrafts((current) => ({ ...current, [id]: value }))
+            }
+            onCopy={copy}
+            onRegenerate={regeneratePerformance}
+          />
+        </section>
+      )}
 
       {results.length > 0 && (
         <section className="mt-8">
