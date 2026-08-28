@@ -156,7 +156,6 @@ export function AppShell() {
       case "class-subject":
         return (
           <ClassSubject
-            privacy={privacy}
             toast={toast}
             savedPlan={savedPlan}
             onSavePlan={persistAssessmentPlan}
