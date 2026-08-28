@@ -22,6 +22,13 @@ import type {
 } from "@/types";
 import { buildSubjectAiRequest } from "./subjectAi";
 
+/**
+ * 한 작업에 담을 수 있는 성취기준 수. 한 학기 전 과목 평가계획을 통째로 올리면
+ * 30개 안팎이 나오므로 여유를 두고 잡는다. 평가표는 학생 × 기준으로 넓어지니
+ * 무제한으로 두지는 않는다.
+ */
+const MAX_STANDARDS = 40;
+
 interface ClassSubjectProps {
   toast: (message: string) => void;
   savedPlan: SavedAssessmentPlan | null;
@@ -110,7 +117,9 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
       return;
     }
     const gradeBand = selected[0].gradeBand;
-    const compatible = selected.filter((item) => item.gradeBand === gradeBand).slice(0, 12);
+    const compatible = selected
+      .filter((item) => item.gradeBand === gradeBand)
+      .slice(0, MAX_STANDARDS);
     const first = compatible[0];
     setSelectedStandardIds(compatible.map((item) => item.standardId));
     setGrade(Number(first.standardCode[0]));
@@ -120,8 +129,12 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
     setRatings({});
     setResults([]);
     setStudentEdits({});
-    if (compatible.length < selected.length) {
-      toast("같은 학년군의 성취기준 12개까지 자동으로 불러왔습니다.");
+    // 잘린 이유가 학년군 때문인지 개수 상한 때문인지 구분해서 알린다.
+    const sameBand = selected.filter((item) => item.gradeBand === gradeBand).length;
+    if (sameBand > MAX_STANDARDS) {
+      toast(`성취기준이 ${sameBand}개라 앞에서부터 ${MAX_STANDARDS}개만 불러왔습니다.`);
+    } else if (compatible.length < selected.length) {
+      toast(`같은 학년군의 성취기준 ${compatible.length}개를 불러왔습니다.`);
     }
   };
 
@@ -133,8 +146,8 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
       return toast("한 작업에는 같은 학년군의 성취기준만 함께 넣을 수 있습니다.");
     }
     if (selectedStandardIds.includes(candidate.standardId)) return toast("이미 추가한 성취기준입니다.");
-    if (selectedStandardIds.length >= 12) {
-      return toast("한 작업에는 성취기준을 최대 12개까지 추가할 수 있습니다.");
+    if (selectedStandardIds.length >= MAX_STANDARDS) {
+      return toast(`한 작업에는 성취기준을 최대 ${MAX_STANDARDS}개까지 추가할 수 있습니다.`);
     }
     setSelectedStandardIds((items) => [...items, candidate.standardId]);
     toast(`${candidate.subjectName} · ${candidate.areaName} · ${candidate.standardCode}를 추가했습니다.`);
@@ -435,7 +448,7 @@ export function ClassSubject({ toast, savedPlan, onSavePlan }: ClassSubjectProps
                 <div className="mb-2 flex items-center justify-between">
                   <b>{planMode === "plan" ? "평가계획에서 불러온 성취기준" : "평가할 성취기준"}</b>
                   <span className="text-[11px] font-extrabold text-primary-dark">
-                    {selectedStandards.length} / 12개
+                    {selectedStandards.length} / {MAX_STANDARDS}개
                   </span>
                 </div>
                 {selectedStandards.length ? (

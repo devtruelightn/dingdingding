@@ -4,7 +4,7 @@ import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
 import { anonymizeText } from "@/lib/privacy";
 import { parseRoster } from "@/lib/roster";
 import { createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
-import { analyzeAssessmentPlan } from "@/lib/files";
+import { analyzeAssessmentPlan, parseExtractedText } from "@/lib/files";
 
 describe("교육과정 데이터", () => {
   it("611개 코드와 A/B/C 원문을 누락 없이 제공한다", () => {
@@ -177,5 +177,23 @@ describe("평가계획 매핑", () => {
     expect(rows[0].confirmed).toBe(true);
     expect(rows[0].uploadedStandardText).toContain("예에서");
     expect(rows[0].officialStandardText).toContain("에서 나눗셈의 몫");
+  });
+
+  // PDF에서 뽑은 글자는 `[6 국 03-05]`처럼 글리프 사이가 벌어져 나온다.
+  it("PDF 추출 텍스트의 띄어쓰기가 섞인 코드를 정규화한다", () => {
+    const text =
+      "과목 교육과정 성취기준 국어 [6 국 03-05] 쓰기 과정을 점검⋅조정하며 글을 쓰고 , " +
+      "글 전체를 대상으로 통일성 있게 고쳐 쓴다 . 2. 바르게 고쳐 써요 ( 쓰기 ) 잘함 글 , 문단 , " +
+      "문장 수준의 고쳐 쓰기 방법을 적용함 . [6 음 01-03] 소리의 어울림을 생각하며 다양한 방법으로 함께 표현한다 . 1. 음악으로";
+    const rows = parseExtractedText(text);
+    expect(rows.map((row) => row.standardCode)).toEqual(["6국03-05", "6음01-03"]);
+    // 원문은 첫 `~다.`까지만 잘라 단원·평가기준이 섞이지 않아야 한다.
+    expect(rows[0].standardText).toContain("고쳐 쓴다 .");
+    expect(rows[0].standardText).not.toContain("바르게 고쳐 써요");
+  });
+
+  it("학교가 자체 편성한 긴 과목 코드도 행으로 남긴다", () => {
+    const rows = parseExtractedText("[6 국사상 01-01] 글의 구조를 해체하고 편향과 왜곡을 분석한다 .");
+    expect(rows[0].standardCode).toBe("6국사상01-01");
   });
 });
