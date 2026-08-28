@@ -8,7 +8,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     emoji: "👋",
     title: "반가워요",
-    body: "평행톡톡은 2022 개정 교육과정에 근거한 교과평어와 행발 초안을 안전하게 만드는 도구예요.",
+    body: "아주 나이스는 2022 개정 교육과정에 근거한 교과평어와 행발 초안을 안전하게 만드는 도구예요.",
   },
   {
     emoji: "📚",

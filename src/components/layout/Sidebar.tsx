@@ -54,10 +54,10 @@ export function Sidebar({
           className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-lg font-black text-white"
           aria-hidden
         >
-          <span>평</span>
+          <span>아</span>
         </span>
         <span className="flex min-w-0 flex-col">
-          <b className="text-lg tracking-tight">평행톡톡</b>
+          <b className="text-lg tracking-tight">아주 나이스</b>
           <small className="truncate text-[11px] text-muted">{context}</small>
         </span>
       </button>

@@ -137,7 +137,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
   };
   const exportCsv = () =>
     downloadText(
-      "평행톡톡_평어묶음.csv",
+      "아주나이스_평어묶음.csv",
       [
         "평가단계,공식수준,성취기준,평어",
         ...results.map((item) =>
