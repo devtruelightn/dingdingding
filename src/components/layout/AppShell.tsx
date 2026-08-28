@@ -1,15 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Toast } from "@/components/ui";
+import { Segmented, Toast } from "@/components/ui";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import { Dashboard } from "@/features/dashboard/Dashboard";
+import { Dashboard, RoleSetup } from "@/features/dashboard";
 import { BehaviorBuilder } from "@/features/behavior-comments";
 import { ClassSubject, QuickSubject } from "@/features/subject-comments";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { Tutorial } from "@/features/tutorial/Tutorial";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -20,6 +21,7 @@ import {
   logout,
   saveWorkspace,
 } from "@/lib/firebase";
+import { viewForRole, workModeForRole } from "@/lib/school";
 import {
   isSavedAssessmentPlan,
   loadStoredAssessmentPlan,
@@ -28,13 +30,17 @@ import {
   saveStoredAssessmentPlan,
   saveWorkspaceSnapshot,
 } from "@/lib/storage";
-import type { SavedAssessmentPlan, View } from "@/types";
+import type { SavedAssessmentPlan, TeacherRole, View, WorkMode } from "@/types";
 
 const WORKSPACE_ID = "default-workspace";
+const WORK_MODES = ["quick", "class"] as const;
+const workModeLabel: Record<WorkMode, string> = { quick: "빠른 생성", class: "우리 반" };
 
-/** 앱 전체 셸: 사이드바 + 탑바 + 화면 전환 + 저장/로그인 오케스트레이션. */
+/** 앱 전체 셸: 진입 흐름(학교급 → 학년·역할) → 사이드바 작업 화면 오케스트레이션. */
 export function AppShell() {
-  const [view, setView] = useState<View>("dashboard");
+  const { stage, profile, selectSchoolLevel, selectGrade, selectRole, restart } = useOnboarding();
+  const [view, setView] = useState<View>("behavior");
+  const [workMode, setWorkMode] = useState<WorkMode>("quick");
   const { theme, setTheme, reduceMotion, setReduceMotion, reduceTransparency, setReduceTransparency } =
     useTheme();
   const { message: toastMessage, toast } = useToast();
@@ -88,9 +94,16 @@ export function AppShell() {
     setMobileNav(false);
   };
 
+  /** 담임/전담과목·교과 버튼 → 해당 메뉴가 선택된 작업 화면으로 진입. */
+  const enterWorkspace = (role: TeacherRole) => {
+    selectRole(role);
+    setView(viewForRole(role));
+    setWorkMode(workModeForRole(role));
+  };
+
   const save = async () => {
     setSaveState("saving");
-    saveWorkspaceSnapshot({ view, theme, privacy, updatedAt: Date.now() });
+    saveWorkspaceSnapshot({ view, theme, privacy, ...profile, updatedAt: Date.now() });
     if (user && isFirebaseConfigured) {
       try {
         await saveWorkspace(user.uid, WORKSPACE_ID, {
@@ -147,25 +160,19 @@ export function AppShell() {
 
   const content = useMemo(() => {
     switch (view) {
-      case "dashboard":
-        return <Dashboard setView={setView} />;
-      case "quick-subject":
-        return (
-          <QuickSubject toast={toast} savedPlan={savedPlan} onSavePlan={persistAssessmentPlan} />
-        );
-      case "class-subject":
-        return (
+      case "behavior":
+        return <BehaviorBuilder classMode={workMode === "class"} privacy={privacy} toast={toast} />;
+      case "subject":
+        return workMode === "class" ? (
           <ClassSubject
             privacy={privacy}
             toast={toast}
             savedPlan={savedPlan}
             onSavePlan={persistAssessmentPlan}
           />
+        ) : (
+          <QuickSubject toast={toast} savedPlan={savedPlan} onSavePlan={persistAssessmentPlan} />
         );
-      case "quick-behavior":
-        return <BehaviorBuilder privacy={privacy} toast={toast} />;
-      case "class-behavior":
-        return <BehaviorBuilder classMode privacy={privacy} toast={toast} />;
       case "settings":
         return (
           <SettingsView
@@ -185,6 +192,7 @@ export function AppShell() {
     }
   }, [
     view,
+    workMode,
     toast,
     privacy,
     theme,
@@ -198,11 +206,34 @@ export function AppShell() {
     persistAssessmentPlan,
   ]);
 
+  if (stage !== "work") {
+    return (
+      <div className="flex min-h-screen flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
+        <main className="w-full">
+          {stage === "school" ? (
+            <Dashboard onSelectSchoolLevel={selectSchoolLevel} />
+          ) : (
+            <RoleSetup
+              schoolLevel={profile.schoolLevel}
+              grade={profile.grade}
+              onSelectGrade={selectGrade}
+              onSelectRole={enterWorkspace}
+              onBack={restart}
+            />
+          )}
+        </main>
+        <Toast message={toastMessage} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <Sidebar
         view={view}
+        profile={profile}
         onNavigate={navigate}
+        onRestart={restart}
         open={mobileNav}
         onClose={() => setMobileNav(false)}
       />
@@ -227,7 +258,20 @@ export function AppShell() {
           signingIn={signingIn}
           user={user}
         />
-        <div className="mx-auto w-[min(1260px,calc(100%-2rem))] py-9 sm:py-10">{content}</div>
+        <div className="mx-auto w-[min(1260px,calc(100%-2rem))] py-9 sm:py-10">
+          {view !== "settings" && (
+            <div className="mx-auto mb-6 flex max-w-[1120px] justify-end">
+              <Segmented
+                label="작업 범위"
+                options={WORK_MODES}
+                value={workMode}
+                onChange={setWorkMode}
+                renderLabel={(mode) => workModeLabel[mode]}
+              />
+            </div>
+          )}
+          {content}
+        </div>
       </main>
 
       {tutorial && (
