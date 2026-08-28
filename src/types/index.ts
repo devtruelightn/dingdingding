@@ -22,6 +22,11 @@ export interface CurriculumStandard {
   levelC: string;
   sourceDocument: string;
   sourcePage: number;
+  /**
+   * 내장 교육과정이 아니라 선생님이 올린 평가계획에서 만든 기준.
+   * 공식 성취수준이 없으므로 근거 검증(AI)을 걸지 않는다.
+   */
+  uploaded?: boolean;
 }
 
 export interface Student {

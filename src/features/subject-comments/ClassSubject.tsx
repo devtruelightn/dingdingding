@@ -129,8 +129,15 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
   const performanceRows = useRef<Map<string, PerformanceRow>>(new Map());
   const performanceVariant = useRef<Map<string, number>>(new Map());
 
+  /**
+   * 업로드한 평가계획으로 만든 기준은 내장 배열에 없다.
+   * id로만 찾으면 중·고등 기준이 통째로 사라지므로 객체를 따로 들고 본다.
+   */
+  const [uploadedStandards, setUploadedStandards] = useState<Record<string, CurriculumStandard>>({});
+  const findStandard = (id: string) =>
+    uploadedStandards[id] ?? standards.find((item) => item.standardId === id);
   const selectedStandards = selectedStandardIds
-    .map((id) => standards.find((item) => item.standardId === id))
+    .map(findStandard)
     .filter((item): item is CurriculumStandard => Boolean(item));
   const levels = schoolLevelsFor(levelCount);
   const cellKey = (studentId: string, selectedStandardId: string) =>
@@ -154,8 +161,12 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
       .filter((item) => item.gradeBand === gradeBand)
       .slice(0, MAX_STANDARDS);
     const first = compatible[0];
+    setUploadedStandards(
+      Object.fromEntries(compatible.filter((item) => item.uploaded).map((item) => [item.standardId, item])),
+    );
     setSelectedStandardIds(compatible.map((item) => item.standardId));
-    setGrade(Number(first.standardCode[0]));
+    // 업로드 코드는 학년 숫자로 시작하지 않으므로 진입 프로필 학년을 유지한다.
+    if (!first.uploaded) setGrade(Number(first.standardCode[0]));
     setSubject(first.subjectName);
     setArea(first.areaName);
     setStandardId(first.standardId);
@@ -172,7 +183,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
   };
 
   const addStandard = (candidateId = standardId) => {
-    const candidate = standards.find((item) => item.standardId === candidateId);
+    const candidate = findStandard(candidateId);
     if (!candidate) return toast("추가할 성취기준을 먼저 선택해 주세요.");
     const selectedBand = selectedStandards[0]?.gradeBand;
     if (selectedBand && selectedBand !== candidate.gradeBand) {
@@ -384,9 +395,12 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
     setStep(4);
 
     const studentCount = new Set(created.map((item) => item.studentId)).size;
-    if (!isCloudAiEnabled) {
+    const fromUpload = selectedStandards.some((item) => item.uploaded);
+    if (!isCloudAiEnabled || fromUpload) {
       return toast(
-        `${studentCount}명, ${created.length}개의 서로 다른 공식 원문 기반 초안을 기기에서 만들었습니다.`,
+        fromUpload
+          ? `${studentCount}명, ${created.length}개 초안을 올린 평가계획 문구를 근거로 만들었습니다.`
+          : `${studentCount}명, ${created.length}개의 서로 다른 공식 원문 기반 초안을 기기에서 만들었습니다.`,
       );
     }
     if (!auth?.currentUser) {
@@ -462,7 +476,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
     });
     sentenceHistory.current.push(fallback);
     updateResult(item.id, { sentence: fallback, grounded: true, needsReview: false, reviewReason: "" });
-    if (!isCloudAiEnabled || !auth?.currentUser) {
+    if (!isCloudAiEnabled || !auth?.currentUser || selectedStandard.uploaded) {
       return toast("기존 전체 결과와 겹치지 않는 문장으로 다시 만들었습니다.");
     }
     try {
@@ -521,7 +535,8 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
     ];
     const sentences: string[] = [];
     const patches = new Map<string, Partial<GeneratedSentence>>();
-    const useAi = isCloudAiEnabled && Boolean(auth?.currentUser);
+    const useAi =
+      isCloudAiEnabled && Boolean(auth?.currentUser) && !selectedStandards.some((s) => s.uploaded);
     let aiFailed = false;
     try {
       for (let index = 0; index < items.length; index += 1) {

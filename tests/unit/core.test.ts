@@ -17,6 +17,8 @@ import { parseRoster } from "@/lib/roster";
 import { createPerformanceDraft, particleFor, createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
 import { analyzeAssessmentPlan, parseAssessmentResultText, parseExtractedText, parsePerformanceGrid, splitEvaluationBlocks } from "@/lib/files";
 import { isTeacherProfile } from "@/lib/storage";
+import { standardsFromPlanRows } from "@/features/assessment-plan";
+import { buildUploadedStandard } from "@/lib/curriculum";
 
 describe("교육과정 데이터", () => {
   it("611개 코드와 A/B/C 원문을 누락 없이 제공한다", () => {
@@ -368,5 +370,75 @@ describe("수행평가 세특 다시 생성", () => {
     expect(createPerformanceDraft(row, { variant: 2 })).toBe(
       createPerformanceDraft(row, { variant: 2 }),
     );
+  });
+});
+
+describe("중·고등 업로드 평가계획", () => {
+  const middleCsv =
+    "과목,평가영역,성취기준\n" +
+    '과학,물질의 구성,"9과03-02 물질을 구성하는 입자의 운동을 설명한다."';
+
+  it("공식 자료에 없는 코드도 올린 문구로 성취기준을 만든다", async () => {
+    const file = new File([middleCsv], "중2-과학.csv", { type: "text/csv" });
+    const rows = await analyzeAssessmentPlan(file, standards);
+    // 초등 데이터에 없으므로 공식 매칭은 실패한다.
+    expect(rows[0].officialStandardCode).toBe("");
+    // 그래도 올린 문구로 평가표를 쓸 수 있어야 한다.
+    const built = standardsFromPlanRows(rows, { allowUploaded: true });
+    expect(built).toHaveLength(1);
+    expect(built[0].uploaded).toBe(true);
+    expect(built[0].standardText).toContain("입자의 운동");
+    expect(built[0].subjectName).toBe("과학");
+    // 세 수준이 모두 채워져야 평어를 만들 수 있다.
+    expect(built[0].levelA).toBeTruthy();
+    expect(built[0].levelB).toBeTruthy();
+    expect(built[0].levelC).toBeTruthy();
+  });
+
+  it("허용하지 않으면 예전처럼 공식 기준만 남는다", async () => {
+    const file = new File([middleCsv], "중2-과학.csv", { type: "text/csv" });
+    const rows = await analyzeAssessmentPlan(file, standards);
+    expect(standardsFromPlanRows(rows)).toHaveLength(0);
+  });
+
+  it("올린 기준으로도 평가단계별 평어를 만든다", async () => {
+    const file = new File([middleCsv], "중2-과학.csv", { type: "text/csv" });
+    const [standard] = standardsFromPlanRows(
+      await analyzeAssessmentPlan(file, standards),
+      { allowUploaded: true },
+    );
+    const sentence = createGroundedSentence({
+      standard,
+      officialLevel: "A",
+      schoolLevel: "잘함",
+      seed: 0,
+    });
+    expect(sentence).toContain("입자의 운동");
+    expect(sentence.endsWith(".")).toBe(true);
+  });
+});
+
+describe("업로드 기준 문장 다듬기", () => {
+  const build = (text: string) =>
+    buildUploadedStandard({
+      standardCode: "",
+      standardText: text,
+      subject: "과학",
+      area: "물질",
+      gradeBand: "5-6",
+    });
+
+  it("문장 앞의 성취기준 코드를 떼어낸다", () => {
+    expect(build("9과03-02 물질의 입자 운동을 설명한다.").standardText).toBe(
+      "물질의 입자 운동을 설명한다.",
+    );
+  });
+
+  it("평서형을 성취수준 꼴로 바꾼다", () => {
+    // 설명한다 → 설명할 수 있다 (받침 ㄴ→ㄹ)
+    expect(build("입자 운동을 설명한다.").levelB).toContain("설명할 수 있다");
+    expect(build("입자 운동을 설명한다.").levelB).not.toContain("설명한 수");
+    // 이미 "~할 수 있다"면 그대로 둔다.
+    expect(build("자기장을 그릴 수 있다.").levelA).toContain("그릴 수 있다");
   });
 });

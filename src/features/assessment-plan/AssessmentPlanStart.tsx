@@ -87,7 +87,7 @@ export function AssessmentPlanStart({
 
   const setRows = (next: AssessmentPlanRow[]) => {
     setRowsState(next);
-    onStandardsChange(standardsFromPlanRows(next));
+    onStandardsChange(standardsFromPlanRows(next, { allowUploaded: !standardsAvailable }));
   };
 
   const analyze = async (file?: File) => {
@@ -97,7 +97,7 @@ export function AssessmentPlanStart({
       const extracted = await analyzeAssessmentPlan(file, standards);
       setFileName(file.name);
       setRows(extracted);
-      const selected = standardsFromPlanRows(extracted);
+      const selected = standardsFromPlanRows(extracted, { allowUploaded: !standardsAvailable });
       toast(
         selected.length
           ? `${selected.length}개 기준을 자동 적용했습니다. 원문이 다른 항목만 확인해 주세요.`
@@ -123,7 +123,7 @@ export function AssessmentPlanStart({
   };
 
   const saveCurrentPlan = async () => {
-    const selected = standardsFromPlanRows(rows);
+    const selected = standardsFromPlanRows(rows, { allowUploaded: !standardsAvailable });
     if (!selected.length) return toast("저장할 성취기준을 한 개 이상 적용해 주세요.");
     await onSavePlan({
       id: savedPlan?.id ?? crypto.randomUUID(),
@@ -135,7 +135,7 @@ export function AssessmentPlanStart({
 
   const choosePlanMode = () => {
     setMode("plan");
-    if (rows.length) onStandardsChange(standardsFromPlanRows(rows));
+    if (rows.length) onStandardsChange(standardsFromPlanRows(rows, { allowUploaded: !standardsAvailable }));
     else if (savedPlan) loadSavedPlan();
   };
 
@@ -156,16 +156,13 @@ export function AssessmentPlanStart({
       <div
         className={cn(
           "mt-4 grid gap-3.5",
-          !standardsAvailable
-            ? "sm:grid-cols-1"
-            : onPerformanceFile
-              ? "sm:grid-cols-2 lg:grid-cols-4"
-              : onResultFile
-                ? "sm:grid-cols-3"
-                : "sm:grid-cols-2",
+          onPerformanceFile
+            ? "sm:grid-cols-2 lg:grid-cols-4"
+            : onResultFile
+              ? "sm:grid-cols-3"
+              : "sm:grid-cols-2",
         )}
       >
-        {standardsAvailable && (
         <button
           type="button"
           aria-pressed={mode === "plan"}
@@ -184,7 +181,6 @@ export function AssessmentPlanStart({
           </span>
           {mode === "plan" && <Check size={16} className="ml-auto text-primary" />}
         </button>
-        )}
         {standardsAvailable && (
         <button
           type="button"
@@ -208,7 +204,7 @@ export function AssessmentPlanStart({
           {mode === "manual" && <Check size={16} className="ml-auto text-primary" />}
         </button>
         )}
-        {standardsAvailable && onResultFile && (
+        {onResultFile && (
         <button
           type="button"
           aria-pressed={mode === "result"}
@@ -282,7 +278,7 @@ export function AssessmentPlanStart({
         </div>
       )}
 
-      {!standardsAvailable && children}
+      {!standardsAvailable && <div className="mt-3.5">{children}</div>}
 
       {mode === "result" && onResultFile && (
         <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">

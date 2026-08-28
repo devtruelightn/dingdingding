@@ -1,4 +1,4 @@
-import { standards } from "@/lib/curriculum";
+import { buildUploadedStandard, standards } from "@/lib/curriculum";
 import type { AssessmentPlanRow } from "@/lib/files";
 import type { CurriculumStandard } from "@/types";
 
@@ -28,12 +28,36 @@ export const choosePlanSuggestion = (
   };
 };
 
-/** 확정(confirmed)되고 공식 코드가 있는 행에서 중복 없는 성취기준 목록을 만든다. */
-export const standardsFromPlanRows = (rows: AssessmentPlanRow[]): CurriculumStandard[] => {
+/**
+ * 평가표에 쓸 성취기준 목록을 만든다.
+ *
+ * 공식 자료에 있으면 그 원문을 쓰고, 없으면(중·고등처럼 내장 데이터가 없는 경우)
+ * 업로드한 평가계획 문구로 기준을 만들어 흐름이 끊기지 않게 한다.
+ */
+export const standardsFromPlanRows = (
+  rows: AssessmentPlanRow[],
+  { allowUploaded = false }: { allowUploaded?: boolean } = {},
+): CurriculumStandard[] => {
   const seen = new Set<string>();
   return rows
-    .filter((row) => row.confirmed && row.officialStandardCode)
-    .map((row) => standards.find((standard) => standard.standardCode === row.officialStandardCode))
+    .map((row) => {
+      const official =
+        row.confirmed && row.officialStandardCode
+          ? standards.find((standard) => standard.standardCode === row.officialStandardCode)
+          : undefined;
+      if (official) return official;
+      if (!allowUploaded) return undefined;
+      const text = row.uploadedStandardText || row.standardText;
+      if (!text.trim()) return undefined;
+      return buildUploadedStandard({
+        standardCode: row.standardCode,
+        standardText: text,
+        subject: row.subject,
+        area: row.area,
+        // 내장 학년군과 섞이지 않도록 한 값으로 통일한다 (같은 작업 안에서만 쓰인다).
+        gradeBand: "5-6",
+      });
+    })
     .filter((standard): standard is CurriculumStandard => {
       if (!standard || seen.has(standard.standardId)) return false;
       seen.add(standard.standardId);

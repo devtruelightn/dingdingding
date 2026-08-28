@@ -111,19 +111,26 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
     toast(`${entry.number}번 세특 초안을 다시 만들었습니다.`);
   };
 
-  const standard = standards.find((item) => item.standardId === standardId);
+  /** 업로드한 평가계획으로 만든 기준은 내장 배열에 없어 따로 들고 본다. */
+  const [uploadedStandards, setUploadedStandards] = useState<Record<string, CurriculumStandard>>({});
+  const findStandard = (id: string) =>
+    uploadedStandards[id] ?? standards.find((item) => item.standardId === id);
+  const standard = findStandard(standardId);
   const planStandards = planStandardIds
-    .map((id) => standards.find((item) => item.standardId === id))
+    .map(findStandard)
     .filter((item): item is CurriculumStandard => Boolean(item));
   const levels = schoolLevelsFor(levelCount);
 
   const selectStandard = (selected: CurriculumStandard) => {
-    setGrade(Number(selected.standardCode[0]));
+    if (!selected.uploaded) setGrade(Number(selected.standardCode[0]));
     setSubject(selected.subjectName);
     setArea(selected.areaName);
     setStandardId(selected.standardId);
   };
   const handlePlanStandards = (selected: CurriculumStandard[]) => {
+    setUploadedStandards(
+      Object.fromEntries(selected.filter((item) => item.uploaded).map((item) => [item.standardId, item])),
+    );
     setPlanStandardIds(selected.map((item) => item.standardId));
     const current = selected.find((item) => item.standardId === standardId) ?? selected[0];
     if (current) selectStandard(current);
@@ -258,7 +265,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
     });
     sentenceHistory.current.push(sentence);
     updateResult(item.id, { sentence, grounded: true, needsReview: false, reviewReason: "" });
-    if (!isCloudAiEnabled || !auth?.currentUser) {
+    if (!isCloudAiEnabled || !auth?.currentUser || standard.uploaded) {
       toast("같은 성취수준 안에서 다른 문장 구조로 다시 만들었습니다.");
       return;
     }
