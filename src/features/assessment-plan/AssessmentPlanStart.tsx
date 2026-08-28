@@ -31,6 +31,8 @@ interface AssessmentPlanStartProps {
    * 넘기지 않으면 "평가결과 사용" 선택지를 감춘다 (빠른 생성처럼 명단이 없는 화면).
    */
   onResultFile?: (file: File) => Promise<void>;
+  /** 수행평가 정리 파일을 골랐을 때. 고등학교에서만 넘어온다. */
+  onPerformanceFile?: (file: File) => Promise<void>;
   toast: (message: string) => void;
 }
 
@@ -42,6 +44,7 @@ export function AssessmentPlanStart({
   onStandardsChange,
   onSavePlan,
   onResultFile,
+  onPerformanceFile,
   toast,
 }: AssessmentPlanStartProps) {
   const [rows, setRowsState] = useState<AssessmentPlanRow[]>([]);
@@ -49,6 +52,18 @@ export function AssessmentPlanStart({
   const [analyzing, setAnalyzing] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const resultInput = useRef<HTMLInputElement>(null);
+  const performanceInput = useRef<HTMLInputElement>(null);
+
+  const readPerformance = async (file?: File) => {
+    if (!file || !onPerformanceFile) return;
+    setAnalyzing(true);
+    try {
+      await onPerformanceFile(file);
+    } finally {
+      setAnalyzing(false);
+      if (performanceInput.current) performanceInput.current.value = "";
+    }
+  };
 
   const readResult = async (file?: File) => {
     if (!file || !onResultFile) return;
@@ -129,7 +144,12 @@ export function AssessmentPlanStart({
         </div>
       </div>
 
-      <div className={cn("mt-4 grid gap-3.5", onResultFile ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+      <div
+        className={cn(
+          "mt-4 grid gap-3.5",
+          onPerformanceFile ? "sm:grid-cols-2 lg:grid-cols-4" : onResultFile ? "sm:grid-cols-3" : "sm:grid-cols-2",
+        )}
+      >
         <button
           type="button"
           aria-pressed={mode === "plan"}
@@ -192,7 +212,56 @@ export function AssessmentPlanStart({
           {mode === "result" && <Check size={16} className="ml-auto text-primary" />}
         </button>
         )}
+        {onPerformanceFile && (
+          <button
+            type="button"
+            aria-pressed={mode === "performance"}
+            onClick={() => {
+              setMode("performance");
+              onStandardsChange([]);
+            }}
+            className={cn(
+              "flex items-center gap-4 rounded-2xl border p-5 text-left",
+              mode === "performance" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+            )}
+          >
+            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+              <FileSpreadsheet size={22} />
+            </span>
+            <span className="min-w-0">
+              <b className="block">수행평가 자료 입력하기</b>
+              <small className="text-xs text-muted">학생이 낸 수행평가 정리로 세특 초안 생성</small>
+            </span>
+            {mode === "performance" && <Check size={16} className="ml-auto text-primary" />}
+          </button>
+        )}
       </div>
+
+      {mode === "performance" && onPerformanceFile && (
+        <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">
+          <div className="flex flex-col items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
+            <p className="text-[11px] text-muted">
+              번호와 항목별 서술이 담긴 <b>수행평가 정리 표(XLSX)</b>를 올리면 학생이 쓴 내용을
+              근거로 세특 초안을 만들어 드려요. <b>이름 칸은 읽지 않고 번호만</b> 사용합니다.
+            </p>
+            <input
+              ref={performanceInput}
+              hidden
+              type="file"
+              accept=".xlsx"
+              onChange={(event) => void readPerformance(event.target.files?.[0])}
+            />
+            <Button
+              variant="primary"
+              disabled={analyzing}
+              onClick={() => performanceInput.current?.click()}
+            >
+              {analyzing ? <RefreshCw className="animate-spin-slow" size={16} /> : <Upload size={16} />}
+              {analyzing ? "분석 중" : "수행평가 파일 선택"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {mode === "result" && onResultFile && (
         <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">

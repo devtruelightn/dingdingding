@@ -3,7 +3,7 @@ import type { AssessmentPlanRow } from "@/lib/files";
 import type { CurriculumStandard } from "@/types";
 
 /** "result"는 이미 매긴 평가결과를 올려 학기말 종합의견으로 바로 가는 길이다. */
-export type PlanSetupMode = "choose" | "plan" | "manual" | "result";
+export type PlanSetupMode = "choose" | "plan" | "manual" | "result" | "performance";
 
 /** 검토 화면에서 교사가 고른 공식 후보 코드를 행에 반영한다. */
 export const choosePlanSuggestion = (

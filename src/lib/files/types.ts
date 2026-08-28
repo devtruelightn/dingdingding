@@ -57,6 +57,14 @@ export interface AssessmentResultRow {
   standard?: CurriculumStandard;
 }
 
+/** 수행평가 정리 워크북의 학생 한 줄. 이름은 담지 않는다. */
+export interface PerformanceRow {
+  number: number;
+  career: string;
+  topic: string;
+  aspects: { label: string; text: string }[];
+}
+
 export const MAX_FILE = 20 * 1024 * 1024;
 export const MAX_ZIP_ENTRIES = 1200;
 export const MAX_UNZIPPED = 100 * 1024 * 1024;

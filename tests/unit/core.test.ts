@@ -3,8 +3,8 @@ import report from "@/data/curriculum-report.json";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
 import { anonymizeText } from "@/lib/privacy";
 import { parseRoster } from "@/lib/roster";
-import { createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
-import { analyzeAssessmentPlan, parseAssessmentResultText, parseExtractedText, splitEvaluationBlocks } from "@/lib/files";
+import { createPerformanceDraft, particleFor, createBehaviorSentence, createGroundedSentence, createUniqueGroundedSentence, escapeSpreadsheetCell, hasAwkwardBehaviorMeta, hasAwkwardSubjectPattern, isSubjectSentenceTooSimilar, ngramSimilarity, utf8Bytes } from "@/lib/text";
+import { analyzeAssessmentPlan, parseAssessmentResultText, parseExtractedText, parsePerformanceGrid, splitEvaluationBlocks } from "@/lib/files";
 import { isTeacherProfile } from "@/lib/storage";
 
 describe("교육과정 데이터", () => {
@@ -244,5 +244,49 @@ describe("진입 선택 저장", () => {
     expect(isTeacherProfile({ schoolLevel: "elementary", grade: 1, role: "principal" })).toBe(false);
     expect(isTeacherProfile({ schoolLevel: "elementary", grade: 1 })).toBe(false);
     expect(isTeacherProfile(null)).toBe(false);
+  });
+});
+
+describe("수행평가 세특", () => {
+  const grid = [
+    ["번호", "이름", "희망 진로/전공", "선택 알고리즘", "① 개념 및 원리", "② 한계 및 비판"],
+    ["1반 3번", "김하늘", "희망 진로: 미생물학자", "패턴 인식", "특징을 추출해 분류하는 알고리즘이다.", "데이터가 편향될 수 있다."],
+    ["1반 4번", "이바다", "-", "공개 키 암호화", "키를 나누어 쓰는 방식이다.", "작성하지 않았습니다."],
+  ];
+
+  it("번호와 항목만 읽고 이름 칸은 담지 않는다", () => {
+    const rows = parsePerformanceGrid(grid);
+    expect(rows.map((row) => row.number)).toEqual([3, 4]);
+    expect(JSON.stringify(rows)).not.toContain("김하늘");
+    expect(rows[0].aspects.map((aspect) => aspect.label)).toEqual(["개념 및 원리", "한계 및 비판"]);
+    expect(rows[0].topic).toBe("패턴 인식");
+  });
+
+  it("학생이 쓴 내용만으로 명사형 세특 초안을 만든다", () => {
+    const [first] = parsePerformanceGrid(grid);
+    const draft = createPerformanceDraft(first);
+    expect(draft).toContain("'패턴 인식'을 주제로");
+    // 평서형 종결이 남으면 안 된다.
+    expect(draft).toContain("분류하는 알고리즘임");
+    expect(draft).not.toContain("알고리즘이다");
+    expect(draft).toContain("개념 및 원리를 정리함");
+    expect(draft).toContain("한계 및 비판을 짚어냄");
+    expect(draft).toContain("미생물학자");
+    // 진로 칸의 "희망 진로:" 접두사는 걷어낸다.
+    expect(draft).not.toContain("희망 진로: 미생물학자");
+  });
+
+  it("미작성 항목과 진로 없음(-)은 문장에 넣지 않는다", () => {
+    const draft = createPerformanceDraft(parsePerformanceGrid(grid)[1]);
+    expect(draft).not.toContain("작성하지 않았습니다");
+    expect(draft).not.toContain("한계 및 비판");
+    expect(draft).not.toContain("희망 진로인");
+  });
+
+  it("받침에 따라 을/를을 가려 쓴다", () => {
+    expect(particleFor("원리", "을", "를")).toBe("를");
+    expect(particleFor("영향", "을", "를")).toBe("을");
+    // 괄호로 끝나도 마지막 한글을 기준으로 삼는다.
+    expect(particleFor("기술의 진화(AI 융합)", "을", "를")).toBe("을");
   });
 });

@@ -6,10 +6,11 @@ import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { Button, GlassPanel, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import { officialLevelFor, schoolLevelsFor, standards } from "@/lib/curriculum";
-import { analyzeAssessmentResults } from "@/lib/files";
+import { analyzeAssessmentResults, analyzePerformanceFile } from "@/lib/files";
 import { subjectMenuLabel } from "@/lib/school";
 import { auth, generateSubjectWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import {
+  createPerformanceDraft,
   createUniqueGroundedSentence,
   isSubjectSentenceTooSimilar,
   normalizeSentence,
@@ -105,6 +106,8 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
   const [summary, setSummary] = useState<Record<string, string>>({});
   /** 종합의견을 다시 만드는 중인 학생. 그 줄의 버튼만 잠근다. */
   const [regeneratingId, setRegeneratingId] = useState("");
+  /** 결과 화면이 무엇으로 만들어졌는지. 제목과 안내 문구가 달라진다. */
+  const [summaryKind, setSummaryKind] = useState<"comment" | "performance">("comment");
 
   const selectedStandards = selectedStandardIds
     .map((id) => standards.find((item) => item.standardId === id))
@@ -187,8 +190,36 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
         .join(" ");
     });
     setSummary(next);
+    setSummaryKind("comment");
     setStep(5);
     toast("학생별 여러 과목 평어를 선택한 기준 순서대로 연결했습니다.");
+  };
+
+  /**
+   * 수행평가 정리 파일을 읽어 학생이 쓴 내용을 근거로 세특 초안을 만든다.
+   * 성취기준·평가단계가 없는 자료라 평가표 단계를 쓰지 않고 바로 결과를 보여 준다.
+   */
+  const usePerformanceFile = async (file: File) => {
+    let rows;
+    try {
+      rows = await analyzePerformanceFile(file);
+    } catch (error) {
+      return toast(error instanceof Error ? error.message : "수행평가 파일을 분석하지 못했습니다.");
+    }
+    const drafts = rows
+      .map((row) => ({ number: row.number, text: createPerformanceDraft(row) }))
+      .filter((draft) => draft.text);
+    if (!drafts.length) {
+      return toast("학생이 작성한 내용을 찾지 못했습니다.");
+    }
+    // 이름은 담지 않는다. 화면에도 파일에도 번호만 쓴다.
+    setStudents(drafts.map((draft) => ({ id: `s-${draft.number}`, number: draft.number, name: `${draft.number}번` })));
+    setSelectedStandardIds([]);
+    setResults([]);
+    setSummary(Object.fromEntries(drafts.map((draft) => [`s-${draft.number}`, draft.text])));
+    setSummaryKind("performance");
+    setStep(5);
+    toast(`${drafts.length}명의 수행평가 자료로 세특 초안을 만들었습니다.`);
   };
 
   /**
@@ -266,6 +297,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
         ]),
       ),
     );
+    setSummaryKind("comment");
     setStep(5);
 
     const skipped = rows.length - matched.length;
@@ -565,6 +597,9 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
             onStandardsChange={handlePlanStandards}
             onSavePlan={onSavePlan}
             onResultFile={useResultFile}
+            onPerformanceFile={
+              profile.schoolLevel === "high" ? usePerformanceFile : undefined
+            }
             toast={toast}
           />
           {planMode !== "choose" && (planMode === "manual" || selectedStandards.length > 0) && (
@@ -855,15 +890,19 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
         <section>
           <button
             type="button"
-            onClick={() => setStep(4)}
+            onClick={() => setStep(summaryKind === "performance" ? 1 : 4)}
             className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
           >
-            ← 학생별 평어 검토로
+            {summaryKind === "performance" ? "← 자료 다시 올리기" : "← 학생별 평어 검토로"}
           </button>
           <div className="mb-4">
-            <h2 className="text-2xl font-bold">학기말 종합의견</h2>
+            <h2 className="text-2xl font-bold">
+              {summaryKind === "performance" ? `학생별 ${menuLabel}` : "학기말 종합의견"}
+            </h2>
             <p className="mt-1 text-muted">
-              새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다.
+              {summaryKind === "performance"
+                ? "학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어 쓰세요."
+                : "새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다."}
             </p>
           </div>
           <div className="flex flex-col gap-3">
@@ -892,6 +931,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                     <Button variant="ghost" size="sm" onClick={() => copy(summary[student.id])}>
                       <Clipboard size={14} /> 복사
                     </Button>
+                    {summaryKind === "comment" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -904,6 +944,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                       />
                       {regeneratingId === student.id ? "생성 중" : "다시 생성"}
                     </Button>
+                    )}
                   </div>
                 </div>
               ))}
