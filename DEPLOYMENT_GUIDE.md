@@ -38,8 +38,11 @@ npx firebase hosting:channel:deploy preview
 Cloud Functions 는 Blaze(종량제) 요금제가 필요합니다.
 
 ```bash
-# OpenAI 키를 시크릿으로 등록
-npx firebase functions:secrets:set OPENAI_API_KEY
+# Upstage(Solar) API 키를 시크릿으로 등록 (https://console.upstage.ai 에서 발급)
+npx firebase functions:secrets:set UPSTAGE_API_KEY
+
+# (선택) 사용할 모델 지정 — 기본값은 solar-pro2
+#   firebase functions:config 대신 런타임 env 로 UPSTAGE_MODEL=solar-pro4 등 설정 가능
 
 npm --prefix functions install
 npm --prefix functions run build
