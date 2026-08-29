@@ -142,12 +142,12 @@ export function AssessmentPlanStart({
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-extrabold text-white">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-on-primary shadow-brand">
           1
         </span>
         <div className="flex flex-col">
           <b className="text-base">평가계획을 사용할까요?</b>
-          <small className="text-[11px] text-muted">
+          <small className="text-xs text-muted">
             먼저 업로드 여부를 선택하면 다음 설정을 자동으로 준비해 드려요.
           </small>
         </div>
@@ -155,7 +155,7 @@ export function AssessmentPlanStart({
 
       <div
         className={cn(
-          "mt-4 grid gap-3.5",
+          "mt-4 grid gap-4",
           onPerformanceFile
             ? "sm:grid-cols-2 lg:grid-cols-4"
             : onResultFile
@@ -168,11 +168,11 @@ export function AssessmentPlanStart({
           aria-pressed={mode === "plan"}
           onClick={choosePlanMode}
           className={cn(
-            "flex items-center gap-4 rounded-2xl border p-5 text-left",
-            mode === "plan" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+            "lift flex items-center gap-4 rounded-2xl border p-4 text-left shadow-soft",
+            mode === "plan" ? "border-primary bg-primary-soft" : "border-line bg-card hover:border-primary/40",
           )}
         >
-          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary-dark">
             <FileSpreadsheet size={22} />
           </span>
           <span className="min-w-0">
@@ -190,11 +190,11 @@ export function AssessmentPlanStart({
             onStandardsChange([]);
           }}
           className={cn(
-            "flex items-center gap-4 rounded-2xl border p-5 text-left",
-            mode === "manual" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+            "lift flex items-center gap-4 rounded-2xl border p-4 text-left shadow-soft",
+            mode === "manual" ? "border-primary bg-primary-soft" : "border-line bg-card hover:border-primary/40",
           )}
         >
-          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary-dark">
             <PencilLine size={22} />
           </span>
           <span className="min-w-0">
@@ -213,11 +213,11 @@ export function AssessmentPlanStart({
             onStandardsChange([]);
           }}
           className={cn(
-            "flex items-center gap-4 rounded-2xl border p-5 text-left",
-            mode === "result" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+            "lift flex items-center gap-4 rounded-2xl border p-4 text-left shadow-soft",
+            mode === "result" ? "border-primary bg-primary-soft" : "border-line bg-card hover:border-primary/40",
           )}
         >
-          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary-dark">
             <ClipboardCheck size={22} />
           </span>
           <span className="min-w-0">
@@ -236,11 +236,11 @@ export function AssessmentPlanStart({
               onStandardsChange([]);
             }}
             className={cn(
-              "flex items-center gap-4 rounded-2xl border p-5 text-left",
-              mode === "performance" ? "border-primary bg-primary-soft/50" : "border-line bg-card",
+              "lift flex items-center gap-4 rounded-2xl border p-4 text-left shadow-soft",
+              mode === "performance" ? "border-primary bg-primary-soft" : "border-line bg-card hover:border-primary/40",
             )}
           >
-            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary-dark">
               <FileSpreadsheet size={22} />
             </span>
             <span className="min-w-0">
@@ -253,9 +253,9 @@ export function AssessmentPlanStart({
       </div>
 
       {mode === "performance" && onPerformanceFile && (
-        <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">
-          <div className="flex flex-col items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
-            <p className="text-[11px] text-muted">
+        <div className="mt-4 rounded-xl border border-line bg-subtle p-4">
+          <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+            <p className="text-xs text-muted">
               번호와 항목별 서술이 담긴 <b>수행평가 정리 표(XLSX)</b>를 올리면 학생이 쓴 내용을
               근거로 세특 초안을 만들어 드려요. <b>이름 칸은 읽지 않고 번호만</b> 사용합니다.
             </p>
@@ -278,12 +278,12 @@ export function AssessmentPlanStart({
         </div>
       )}
 
-      {!standardsAvailable && <div className="mt-3.5">{children}</div>}
+      {!standardsAvailable && <div className="mt-4">{children}</div>}
 
       {mode === "result" && onResultFile && (
-        <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">
-          <div className="flex flex-col items-stretch justify-between gap-2.5 sm:flex-row sm:items-center">
-            <p className="text-[11px] text-muted">
+        <div className="mt-4 rounded-xl border border-line bg-subtle p-4">
+          <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+            <p className="text-xs text-muted">
               학교 업무 시스템에서 <b>교과평가(성취기준별)</b> 결과를 PDF로 내려받아 올리면, 학생별
               평가단계를 읽어 학기말 종합의견까지 한 번에 만들어 드려요.
             </p>
@@ -307,20 +307,20 @@ export function AssessmentPlanStart({
       )}
 
       {mode === "plan" && (
-        <div className="mt-3.5 rounded-2xl border border-line bg-solid/60 p-4">
-          <div className="flex flex-col items-stretch justify-end gap-2.5 sm:flex-row">
+        <div className="mt-4 rounded-xl border border-line bg-subtle p-4">
+          <div className="flex flex-col items-stretch justify-end gap-3 sm:flex-row">
             {savedPlan && (
               <button
                 type="button"
                 onClick={loadSavedPlan}
-                className="flex flex-1 items-center gap-2.5 rounded-lg border border-primary/40 bg-card p-2 text-left text-primary-dark"
+                className="flex flex-1 items-center gap-3 rounded-lg border border-primary/40 bg-card p-2 text-left text-primary-dark"
               >
                 <span className="grid size-9 place-items-center rounded-lg bg-primary-soft">
                   <Cloud size={18} />
                 </span>
                 <span className="flex flex-col">
                   <b>이전에 저장한 평가계획</b>
-                  <small className="text-[10px] text-muted">
+                  <small className="text-xs text-muted">
                     {savedPlan.fileName} · {savedPlan.standardIds.length}개 기준
                   </small>
                 </span>
@@ -340,7 +340,7 @@ export function AssessmentPlanStart({
             </Button>
           </div>
           {fileName && (
-            <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-primary-dark">
+            <div className="mt-3 flex items-center gap-2 text-xs text-primary-dark">
               <FileSpreadsheet size={15} />
               <b>{fileName}</b>
               <span className="ml-auto text-muted">학년·과목·평가영역 자동 설정</span>
@@ -350,7 +350,7 @@ export function AssessmentPlanStart({
             <>
               <AssessmentPlanReview rows={rows} setRows={setRows} />
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-muted">적용된 기준은 현재 메뉴에 즉시 반영됩니다.</p>
+                <p className="text-xs text-muted">적용된 기준은 현재 메뉴에 즉시 반영됩니다.</p>
                 <Button variant="ghost" onClick={() => void saveCurrentPlan()}>
                   <Save size={16} /> 이 평가계획 저장
                 </Button>

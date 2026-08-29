@@ -9,14 +9,14 @@ interface PageHeadingProps {
 
 export function PageHeading({ eyebrow, title, description, icon: Icon }: PageHeadingProps) {
   return (
-    <header className="mb-6 flex items-center gap-4">
-      <div className="grid size-[54px] shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary">
+    <header className="mb-8 flex items-start gap-4">
+      <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary-dark shadow-soft">
         <Icon size={24} />
       </div>
-      <div>
-        <span className="text-xs font-extrabold text-primary">{eyebrow}</span>
-        <h1 className="my-0.5 text-3xl leading-tight tracking-tight">{title}</h1>
-        <p className="mt-1 text-muted">{description}</p>
+      <div className="min-w-0">
+        <span className="text-xs font-bold tracking-wide text-primary">{eyebrow}</span>
+        <h1 className="mt-1 text-3xl font-bold">{title}</h1>
+        <p className="mt-2 text-sm text-muted">{description}</p>
       </div>
     </header>
   );

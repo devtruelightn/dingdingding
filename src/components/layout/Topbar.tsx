@@ -2,13 +2,9 @@
 
 import { HelpCircle, LogIn, LogOut, Menu, Moon, RefreshCw } from "lucide-react";
 import { Button, IconButton } from "@/components/ui";
-import { cn } from "@/lib/cn";
 import type { User } from "@/lib/firebase";
 
-type SaveState = "saved" | "saving" | "offline";
-
 interface TopbarProps {
-  saveState: SaveState;
   onOpenMenu: () => void;
   onOpenSettings: () => void;
   onOpenTutorial: () => void;
@@ -18,14 +14,7 @@ interface TopbarProps {
   user: User | null;
 }
 
-const saveLabel: Record<SaveState, string> = {
-  saved: "저장됨",
-  saving: "저장 중",
-  offline: "오프라인 · 기기 저장",
-};
-
 export function Topbar({
-  saveState,
   onOpenMenu,
   onOpenSettings,
   onOpenTutorial,
@@ -35,22 +24,11 @@ export function Topbar({
   user,
 }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-20 flex min-h-[70px] items-center justify-between gap-2 border-b border-line bg-card/80 px-4 backdrop-blur-lg sm:px-7">
+    <header className="glass sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 border-b border-line px-4 sm:px-7">
       <div className="flex items-center gap-2">
         <IconButton className="lg:hidden" aria-label="메뉴 열기" onClick={onOpenMenu}>
           <Menu />
         </IconButton>
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <span
-            className={cn(
-              "size-[7px] rounded-full",
-              saveState === "saved" && "bg-success",
-              saveState === "saving" && "bg-warning",
-              saveState === "offline" && "bg-muted",
-            )}
-          />
-          {saveLabel[saveState]}
-        </div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -62,7 +40,7 @@ export function Topbar({
         </IconButton>
         {user ? (
           <button
-            className="flex min-h-[42px] items-center gap-2 rounded-xl border border-line bg-card py-0 pl-1 pr-2.5"
+            className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-card py-0 pl-1 pr-3 transition-colors duration-150 hover:bg-subtle"
             onClick={onSignOut}
             title="로그아웃"
           >

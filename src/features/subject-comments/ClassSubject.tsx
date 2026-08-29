@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
-import { Button, GlassPanel, Segmented } from "@/components/ui";
+import { Button, Card, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import {
   defaultSelectionFor,
@@ -73,7 +73,7 @@ function StepNav({
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+          className="rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft hover:text-ink"
         >
           ← 이전
         </button>
@@ -87,7 +87,7 @@ function StepNav({
             type="button"
             onClick={onNext}
             disabled={nextDisabled}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-opacity disabled:opacity-40"
           >
             {nextLabel} →
           </button>
@@ -641,7 +641,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
       )}
 
       {step === 1 && (
-        <GlassPanel>
+        <Card>
           <AssessmentPlanStart
             mode={planMode}
             setMode={setPlanMode}
@@ -660,12 +660,12 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
           {planMode !== "choose" && (planMode === "manual" || selectedStandards.length > 0) && (
             <div className="mt-6 border-t border-line pt-6">
               <div className="mb-3 flex items-center gap-3">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-extrabold text-white">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-on-primary">
                   2
                 </span>
                 <div>
                   <b>평가 단계 설정</b>
-                  <small className="block text-[11px] text-muted">
+                  <small className="block text-xs text-muted">
                     3·4·5단계가 뜻하는 바를 학교 평가계획에 맞게 선택하세요.
                   </small>
                 </div>
@@ -681,12 +681,12 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
               {planMode === "manual" && (
                 <>
                   <div className="mt-6 mb-3 flex items-center gap-3">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-extrabold text-white">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-on-primary">
                       3
                     </span>
                     <div>
                       <b>평가 내용 설정</b>
-                      <small className="block text-[11px] text-muted">
+                      <small className="block text-xs text-muted">
                         학년·과목·평가영역·성취기준을 고른 뒤 표에 추가하세요.
                       </small>
                     </div>
@@ -695,10 +695,10 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                     schoolLevel={profile.schoolLevel}
                     {...{ grade, setGrade, subject, setSubject, area, setArea, standardId, setStandardId }}
                   />
-                  <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-4 flex flex-col gap-3 rounded-xl border border-primary/25 bg-primary-soft p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col">
                       <b>선택한 기준을 평가표에 추가하세요</b>
-                      <span className="text-[11px] text-muted">
+                      <span className="text-xs text-muted">
                         과목을 바꿔 다시 선택하면 여러 과목을 한 번에 평가할 수 있습니다.
                       </span>
                     </div>
@@ -709,10 +709,10 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                 </>
               )}
 
-              <div className="mt-3.5 rounded-2xl border border-line bg-solid/45 p-3.5">
+              <div className="mt-4 rounded-xl border border-line bg-subtle p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <b>{planMode === "plan" ? "평가계획에서 불러온 성취기준" : "평가할 성취기준"}</b>
-                  <span className="text-[11px] font-extrabold text-primary-dark">
+                  <span className="text-xs font-bold text-primary-dark">
                     {selectedStandards.length} / {MAX_STANDARDS}개
                   </span>
                 </div>
@@ -720,16 +720,16 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                   selectedStandards.map((selectedStandard, index) => (
                     <article
                       key={selectedStandard.standardId}
-                      className="grid grid-cols-[30px_minmax(0,1fr)_44px] items-center gap-2.5 border-t border-line py-2.5"
+                      className="grid grid-cols-[30px_minmax(0,1fr)_44px] items-center gap-3 border-t border-line py-3"
                     >
-                      <span className="grid size-7 place-items-center rounded-lg bg-primary-soft text-[11px] font-black text-primary-dark">
+                      <span className="grid size-7 place-items-center rounded-lg bg-primary-soft text-xs font-bold text-primary-dark">
                         {index + 1}
                       </span>
                       <div>
                         <b className="text-xs">
                           {selectedStandard.subjectName} · {selectedStandard.areaName}
                         </b>
-                        <p className="mt-0.5 text-[11px] leading-normal text-muted">
+                        <p className="mt-1 text-xs leading-normal text-muted">
                           [{selectedStandard.standardCode}] {selectedStandard.standardText}
                         </p>
                       </div>
@@ -756,14 +756,14 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
               />
             </div>
           )}
-        </GlassPanel>
+        </Card>
       )}
 
       {step === 2 && (
-        <GlassPanel>
+        <Card>
           <div className="mb-1">
             <b>학생 수</b>
-            <small className="block text-[11px] text-muted">
+            <small className="block text-xs text-muted">
               평가할 학생 인원만 입력하세요. 1번부터 번호가 자동으로 매겨집니다.
             </small>
           </div>
@@ -775,8 +775,8 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                 onClick={() => setStudentCount(count)}
                 className={
                   students.length === count
-                    ? "rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white"
-                    : "rounded-lg border border-line px-3 py-2 text-sm text-muted hover:bg-primary-soft/50"
+                    ? "rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary"
+                    : "rounded-lg border border-line px-3 py-2 text-sm text-muted hover:bg-primary-soft"
                 }
               >
                 {count}명
@@ -804,11 +804,11 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
             nextDisabled={!students.length || !selectedStandards.length}
             nextLabel="평가 입력"
           />
-        </GlassPanel>
+        </Card>
       )}
 
       {step === 3 && (
-        <GlassPanel>
+        <Card>
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold">학생별 평가단계</h2>
@@ -816,11 +816,11 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
                 {students.length}명 × {selectedStandards.length}개 기준 · 총 {totalCells}칸
               </p>
             </div>
-            <div className="grid size-14 place-items-center rounded-full bg-primary-soft text-xs font-extrabold">
+            <div className="grid size-14 place-items-center rounded-full bg-primary-soft text-xs font-bold">
               {progress}%
             </div>
           </div>
-          <div className="max-h-[560px] overflow-auto rounded-2xl border border-line">
+          <div className="max-h-[560px] overflow-auto rounded-xl border border-line">
             <table className="w-full border-separate border-spacing-0 text-center text-sm">
               <thead>
                 <tr>
@@ -840,7 +840,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
               <tbody>
                 {students.map((student) => (
                   <tr key={student.id}>
-                    <th className="sticky left-0 z-10 border-b border-line bg-solid/80 p-2">
+                    <th className="sticky left-0 z-10 border-b border-line bg-subtle p-2">
                       {student.number}번
                     </th>
                     {selectedStandards.map((s) => {
@@ -876,7 +876,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
               <Sparkles size={17} /> {completedCells}개 평어 생성
             </Button>
           </StepNav>
-        </GlassPanel>
+        </Card>
       )}
 
       {step === 4 && (
@@ -884,7 +884,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
           <button
             type="button"
             onClick={() => setStep(3)}
-            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft hover:text-ink"
           >
             ← 평가 입력으로
           </button>
@@ -907,15 +907,15 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
               return (
                 <div
                   key={student.id}
-                  className="grid gap-3 rounded-2xl border border-line bg-card p-3 sm:grid-cols-[110px_1fr]"
+                  className="grid gap-3 rounded-xl border border-line bg-card p-3 sm:grid-cols-[110px_1fr]"
                 >
                   <div className="flex flex-col items-center justify-center rounded-xl bg-primary-soft p-2 text-center">
                     <b>{student.number}번</b>
-                    <small className="mt-1 text-[10px] text-muted">
+                    <small className="mt-1 text-xs text-muted">
                       {studentItems.length}개 평어
                     </small>
                   </div>
-                  <div className="flex min-w-0 flex-col gap-2.5">
+                  <div className="flex min-w-0 flex-col gap-3">
                     {studentItems.map((item, index) => {
                       const selectedStandard = selectedStandards.find(
                         (current) => current.standardId === item.standardId,
@@ -947,7 +947,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
           <button
             type="button"
             onClick={() => setStep(summaryKind === "performance" ? 1 : 4)}
-            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft/50 hover:text-ink"
+            className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft hover:text-ink"
           >
             {summaryKind === "performance" ? "← 자료 다시 올리기" : "← 학생별 평어 검토로"}
           </button>
