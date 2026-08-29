@@ -31,20 +31,20 @@ export function StudentDraftList({
       {numbers
         .filter((entry) => texts[entry.id])
         .map((entry) => (
-          <div key={entry.id} className="grid items-start gap-2.5 sm:grid-cols-[140px_1fr_auto]">
+          <div key={entry.id} className="grid items-start gap-3 sm:grid-cols-[140px_1fr_auto]">
             <div className="flex flex-col">
               <b>{entry.number}번</b>
-              <span className="text-[10px] text-muted">
+              <span className="text-xs text-muted">
                 {texts[entry.id].length}자 · {utf8Bytes(texts[entry.id])}바이트
               </span>
             </div>
             <textarea
-              className="min-h-[88px] leading-relaxed"
+              className="min-h-24 leading-relaxed"
               value={texts[entry.id]}
               aria-label={`${entry.number}번 ${label}`}
               onChange={(event) => onChange(entry.id, event.target.value)}
             />
-            <div className="flex gap-1.5 sm:flex-col">
+            <div className="flex gap-2 sm:flex-col">
               <Button variant="ghost" size="sm" onClick={() => onCopy(texts[entry.id])}>
                 <Clipboard size={14} /> 복사
               </Button>

@@ -2,7 +2,7 @@
 
 import { Clipboard, Lock, MoreHorizontal, RefreshCw } from "lucide-react";
 import { Evidence } from "@/components/curriculum/Evidence";
-import { IconButton } from "@/components/ui";
+import { Button, IconButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { utf8Bytes } from "@/lib/text";
 import type { CurriculumStandard, GeneratedSentence } from "@/types";
@@ -30,9 +30,9 @@ export function SentenceEditor({
   onCopy,
 }: SentenceEditorProps) {
   return (
-    <article className="min-w-0 rounded-2xl border border-line bg-card p-4">
-      <div className="flex items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold">
+    <article className="min-w-0 rounded-xl border border-line bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
           <span
             className={cn(
               "rounded-full px-2 py-1",
@@ -44,7 +44,7 @@ export function SentenceEditor({
           <span className="rounded-full bg-primary-soft px-2 py-1 text-primary-dark">
             공식 {item.officialLevel}
           </span>
-          <span className="rounded-full border border-line bg-solid/60 px-2 py-1 font-semibold text-muted">
+          <span className="rounded-full border border-line bg-subtle px-2 py-1 font-semibold text-muted">
             {standard.subjectName} · {standard.areaName}
           </span>
           {item.locked && (
@@ -61,11 +61,11 @@ export function SentenceEditor({
       <textarea
         value={item.sentence}
         aria-label="생성된 평어"
-        className="mt-3 min-h-[84px] w-full border-transparent bg-solid/50 leading-relaxed"
+        className="mt-3 min-h-24 w-full border-transparent bg-subtle leading-relaxed"
         onChange={(event) => onChange({ sentence: event.target.value, edited: true, locked: true })}
       />
 
-      <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted">
+      <div className="mt-2 flex items-center justify-between text-xs text-muted">
         <span>
           {item.sentence.length}자 · {utf8Bytes(item.sentence)}바이트
         </span>
@@ -77,7 +77,7 @@ export function SentenceEditor({
       <Evidence standard={standard} item={item} />
 
       <div className="mt-3 flex items-center justify-between">
-        <label className="flex items-center gap-1.5 text-[11px]">
+        <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={item.confirmed}
@@ -85,20 +85,13 @@ export function SentenceEditor({
           />
           교사 확인 완료
         </label>
-        <div className="flex gap-1.5">
-          <button
-            className="inline-flex min-h-[35px] items-center gap-1 rounded-lg border border-line bg-solid/70 px-2.5 text-xs font-bold disabled:opacity-50"
-            disabled={item.locked}
-            onClick={onRegenerate}
-          >
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" disabled={item.locked} onClick={onRegenerate}>
             <RefreshCw size={15} /> 다시 생성
-          </button>
-          <button
-            className="inline-flex min-h-[35px] items-center gap-1 rounded-lg border border-line bg-solid/70 px-2.5 text-xs font-bold"
-            onClick={onCopy}
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onCopy}>
             <Clipboard size={15} /> 복사
-          </button>
+          </Button>
         </div>
       </div>
     </article>

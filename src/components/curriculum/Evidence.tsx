@@ -16,11 +16,11 @@ export function Evidence({
         <ShieldCheck size={16} /> 근거 보기 · {standard.standardCode} · 공식 {item.officialLevel}
       </summary>
       <div className="px-1 pb-3">
-        <b className="text-[11px]">성취기준</b>
+        <b className="text-xs">성취기준</b>
         <p className="my-1 text-xs text-muted">{standard.standardText}</p>
-        <b className="text-[11px]">공식 {item.officialLevel} 수준</b>
+        <b className="text-xs">공식 {item.officialLevel} 수준</b>
         <p className="my-1 text-xs text-muted">{officialTextFor(standard, item.officialLevel)}</p>
-        <small className="text-[10px] text-muted">
+        <small className="text-xs text-muted">
           {standard.sourceDocument} · {standard.sourcePage}쪽
         </small>
       </div>

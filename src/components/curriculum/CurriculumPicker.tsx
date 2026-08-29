@@ -18,8 +18,8 @@ interface CurriculumPickerProps {
   setStandardId: (id: string) => void;
 }
 
-const fieldClass = "flex flex-col gap-1.5";
-const labelClass = "text-xs font-extrabold";
+const fieldClass = "flex flex-col gap-2";
+const labelClass = "text-xs font-bold";
 
 /** 학년 → 과목 → 평가영역 → 성취기준을 순서대로 고르는 셀렉트 그룹. */
 export function CurriculumPicker({
@@ -77,7 +77,7 @@ export function CurriculumPicker({
           ))}
         </select>
         {band && (
-          <small className="text-[10px] text-muted">{band}학년군 공식 성취기준 사용</small>
+          <small className="text-xs text-muted">{band}학년군 공식 성취기준 사용</small>
         )}
       </label>
       {band ? (
