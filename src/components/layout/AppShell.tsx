@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Segmented, Toast } from "@/components/ui";
-import { Sidebar } from "./Sidebar";
+import { Toast } from "@/components/ui";
 import { Topbar } from "./Topbar";
 import { Dashboard, RoleSetup } from "@/features/dashboard";
 import { BehaviorBuilder } from "@/features/behavior-comments";
@@ -34,8 +33,6 @@ import {
 import type { SavedAssessmentPlan, TeacherRole, View, WorkMode } from "@/types";
 
 const WORKSPACE_ID = "default-workspace";
-const WORK_MODES = ["quick", "class"] as const;
-const workModeLabel: Record<WorkMode, string> = { quick: "빠른 생성", class: "우리 반" };
 
 /** 앱 전체 셸: 진입 흐름(학교급 → 학년·역할) → 사이드바 작업 화면 오케스트레이션. */
 export function AppShell() {
@@ -50,7 +47,6 @@ export function AppShell() {
   const privacy = false;
   const [cloudNames, setCloudNames] = useState(false);
   const [tutorial, setTutorial] = useState(false);
-  const [mobileNav, setMobileNav] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [savedPlan, setSavedPlan] = useState<SavedAssessmentPlan | null>(null);
 
@@ -104,7 +100,6 @@ export function AppShell() {
 
   const navigate = (next: View) => {
     setView(profile.role === "subject" && next === "behavior" ? "subject" : next);
-    setMobileNav(false);
   };
 
   /** 담임/전담과목·교과 버튼 → 해당 메뉴가 선택된 작업 화면으로 진입. */
@@ -243,25 +238,13 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
-      <Sidebar
-        view={view}
-        profile={profile}
-        onNavigate={navigate}
-        onRestart={restart}
-        open={mobileNav}
-        onClose={() => setMobileNav(false)}
-      />
-      {mobileNav && (
-        <button
-          className="fixed inset-0 z-20 bg-ink/35 lg:hidden"
-          aria-label="메뉴 닫기"
-          onClick={() => setMobileNav(false)}
-        />
-      )}
-      <main className="min-w-0 lg:col-start-2">
+    <div className="min-h-screen">
+      <main className="min-w-0">
         <Topbar
-          onOpenMenu={() => setMobileNav(true)}
+          view={view}
+          profile={profile}
+          onNavigate={navigate}
+          onRestart={restart}
           onOpenSettings={() => navigate("settings")}
           onOpenTutorial={() => setTutorial(true)}
           onSignIn={() => void signIn()}
@@ -270,17 +253,6 @@ export function AppShell() {
           user={user}
         />
         <div className="mx-auto w-[min(1260px,calc(100%-2rem))] py-9 sm:py-10">
-          {view !== "settings" && (
-            <div className="mx-auto mb-6 flex max-w-[1120px] justify-end">
-              <Segmented
-                label="작업 범위"
-                options={WORK_MODES}
-                value={workMode}
-                onChange={setWorkMode}
-                renderLabel={(mode) => workModeLabel[mode]}
-              />
-            </div>
-          )}
           {content}
         </div>
       </main>

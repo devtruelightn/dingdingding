@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Clipboard, Download, List, MessageCircleHeart, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clipboard, Download, List, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { Button, Card, IconButton, Modal, PageHeading } from "@/components/ui";
 import { auth, generateBehaviorWithAi, isCloudAiEnabled } from "@/lib/firebase";
 import { anonymizeText } from "@/lib/privacy";
@@ -107,7 +107,11 @@ export function BehaviorBuilder({ classMode = false, profile, toast }: Props) {
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      <div className="flex items-start justify-between gap-3"><PageHeading eyebrow="행동특성 및 종합의견" title={classMode ? "우리 반 행발 작성" : "행발 빠른 생성"} description={classMode ? "학생별 관찰 키워드와 메모를 차례로 기록하세요." : "학생 정보 없이 관찰 키워드로 행발 문장 초안을 만듭니다."} icon={MessageCircleHeart} />{classMode && <span aria-live="polite" className={`mt-2 shrink-0 text-xs ${saveStatus === "error" ? "text-danger" : "text-muted"}`}>{saveStatus === "saving" ? "저장 중…" : saveStatus === "saved" ? "자동 저장됨" : "저장하지 못했습니다. 다시 시도해 주세요."}</span>}</div>
+      {classMode && saveStatus === "error" && (
+        <p aria-live="polite" className="mb-4 text-xs text-danger">
+          저장하지 못했습니다. 다시 시도해 주세요.
+        </p>
+      )}
       {classMode && (
         <div className="mb-5 grid gap-3">
           <Card className="p-4 sm:p-6">

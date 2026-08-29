@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Plus, Sparkles, Trash2 } from "lucide-react";
+import { BookOpen, Download, Plus, Sparkles, Trash2 } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
-import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, Card, Segmented } from "@/components/ui";
 import { AssessmentPlanStart, type PlanSetupMode } from "@/features/assessment-plan";
 import {
@@ -36,6 +35,7 @@ import type {
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { StudentDraftList } from "./components/StudentDraftList";
+import { downloadStudentDraftWorkbook } from "./subjectExport";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 /**
@@ -635,11 +635,6 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
 
   return (
     <div className="mx-auto max-w-[1120px]">
-      {/* 결과 화면은 자체 제목이 있어 페이지 제목이 겹친다. */}
-      {step !== 5 && (
-        <h1 className="mb-6 text-2xl font-bold tracking-tight">우리 반 {menuLabel}</h1>
-      )}
-
       {step === 1 && (
         <Card>
           <AssessmentPlanStart
@@ -654,9 +649,7 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
             }
             standardsAvailable={standardsReady}
             toast={toast}
-          >
-            <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
-          </AssessmentPlanStart>
+          />
           {planMode !== "choose" && (planMode === "manual" || selectedStandards.length > 0) && (
             <div className="mt-6 border-t border-line pt-6">
               <div className="mb-3 flex items-center gap-3">
@@ -951,15 +944,31 @@ export function ClassSubject({ profile, toast, savedPlan, onSavePlan }: ClassSub
           >
             {summaryKind === "performance" ? "← 자료 다시 올리기" : "← 학생별 평어 검토로"}
           </button>
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">
-              {summaryKind === "performance" ? `학생별 ${menuLabel}` : "학기말 종합의견"}
-            </h2>
-            <p className="mt-1 text-muted">
-              {summaryKind === "performance"
-                ? "학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어 쓰세요."
-                : "새로운 사실을 추가하지 않고 학생별 여러 과목 평어를 선택한 순서대로 연결했습니다."}
-            </p>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-2xl font-bold">
+                {summaryKind === "performance" ? `학생별 ${menuLabel}` : "학기말 종합의견"}
+              </h2>
+              {summaryKind === "performance" && (
+                <p className="mt-1 text-muted">
+                  학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어
+                  쓰세요.
+                </p>
+              )}
+            </div>
+            <Button
+              variant="primary"
+              className="shrink-0"
+              onClick={() =>
+                void downloadStudentDraftWorkbook(
+                  summaryKind === "performance" ? menuLabel : "학기말 종합의견",
+                  students,
+                  summary,
+                )
+              }
+            >
+              <Download size={17} /> 엑셀로 내려받기
+            </Button>
           </div>
           <StudentDraftList
             numbers={students}

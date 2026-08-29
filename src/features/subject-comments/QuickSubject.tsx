@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Clipboard, Download, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
+import { Clipboard, Download, List, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
-import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
 import { Button, Card, PageHeading, Segmented } from "@/components/ui";
 import {
   AssessmentPlanStart,
@@ -37,6 +36,7 @@ import type {
 } from "@/types";
 import { SentenceEditor } from "./components/SentenceEditor";
 import { StudentDraftList } from "./components/StudentDraftList";
+import { downloadStudentDraftWorkbook } from "./subjectExport";
 import { buildSubjectAiRequest } from "./subjectAi";
 
 interface QuickSubjectProps {
@@ -75,6 +75,8 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
   /** 수행평가 자료로 만든 학생별 세특 초안 (고등학교에서만 쓴다). */
   const [performanceDrafts, setPerformanceDrafts] = useState<Record<string, string>>({});
   const [performanceNumbers, setPerformanceNumbers] = useState<{ id: string; number: number }[]>([]);
+  /** 초안 목록은 설정 화면 아래가 아니라 별도 화면으로 연다. */
+  const [performanceOpen, setPerformanceOpen] = useState(false);
   const performanceRows = useRef<Map<string, PerformanceRow>>(new Map());
   const performanceVariant = useRef<Map<string, number>>(new Map());
 
@@ -97,6 +99,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
     setPerformanceDrafts(
       Object.fromEntries(drafts.map(({ row, text }) => [`s-${row.number}`, text])),
     );
+    setPerformanceOpen(true);
     toast(`${drafts.length}명의 수행평가 자료로 세특 초안을 만들었습니다.`);
   };
 
@@ -310,6 +313,45 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
     ? results.filter((item) => item.schoolLevel === activeResultLevel)
     : results;
 
+  if (performanceOpen && performanceNumbers.length > 0)
+    return (
+      <div className="mx-auto max-w-[1120px]">
+        <button
+          type="button"
+          onClick={() => setPerformanceOpen(false)}
+          className="mb-4 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-primary-soft hover:text-ink"
+        >
+          ← 자료 다시 올리기
+        </button>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold">학생별 {menuLabel}</h2>
+            <p className="mt-1 text-muted">
+              학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어
+              쓰세요.
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            className="shrink-0"
+            onClick={() =>
+              void downloadStudentDraftWorkbook(menuLabel, performanceNumbers, performanceDrafts)
+            }
+          >
+            <Download size={17} /> 엑셀로 내려받기
+          </Button>
+        </div>
+        <StudentDraftList
+          numbers={performanceNumbers}
+          texts={performanceDrafts}
+          label={menuLabel}
+          onChange={(id, value) => setPerformanceDrafts((current) => ({ ...current, [id]: value }))}
+          onCopy={copy}
+          onRegenerate={regeneratePerformance}
+        />
+      </div>
+    );
+
   return (
     <div className="mx-auto max-w-[1120px]">
       <PageHeading
@@ -330,9 +372,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
           }
           standardsAvailable={standardsReady}
           toast={toast}
-        >
-          <CurriculumUnavailable schoolLevel={profile.schoolLevel} />
-        </AssessmentPlanStart>
+        />
         {planMode !== "choose" && (planMode === "manual" || planStandards.length > 0) && (
           <div className="mt-6 border-t border-line pt-6">
             <div className="mb-3 flex items-center gap-3">
@@ -437,25 +477,11 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
       </Card>
 
       {performanceNumbers.length > 0 && (
-        <section className="mt-6">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">학생별 {menuLabel}</h2>
-            <p className="mt-1 text-muted">
-              학생이 수행평가에 쓴 내용만 간추린 초안입니다. 이름은 넣지 않았으니 확인 후 다듬어
-              쓰세요.
-            </p>
-          </div>
-          <StudentDraftList
-            numbers={performanceNumbers}
-            texts={performanceDrafts}
-            label={menuLabel}
-            onChange={(id, value) =>
-              setPerformanceDrafts((current) => ({ ...current, [id]: value }))
-            }
-            onCopy={copy}
-            onRegenerate={regeneratePerformance}
-          />
-        </section>
+        <div className="mt-6">
+          <Button onClick={() => setPerformanceOpen(true)}>
+            <List size={17} /> 학생별 {menuLabel} 다시 보기
+          </Button>
+        </div>
       )}
 
       {results.length > 0 && (

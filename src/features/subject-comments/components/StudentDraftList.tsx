@@ -1,7 +1,7 @@
 "use client";
 
 import { Clipboard, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 import { utf8Bytes } from "@/lib/text";
 
 interface StudentDraftListProps {
@@ -16,7 +16,7 @@ interface StudentDraftListProps {
   busyId?: string;
 }
 
-/** 학생별 초안 목록. 번호 · 글자수 · 편집 칸 · 복사/다시 생성 한 줄씩. */
+/** 학생별 초안 목록. 전체 학생 행발 화면과 같은 카드 한 장에 번호 · 분량 · 편집 칸을 담는다. */
 export function StudentDraftList({
   numbers,
   texts,
@@ -27,41 +27,43 @@ export function StudentDraftList({
   busyId,
 }: StudentDraftListProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="grid gap-3">
       {numbers
         .filter((entry) => texts[entry.id])
         .map((entry) => (
-          <div key={entry.id} className="grid items-start gap-3 sm:grid-cols-[140px_1fr_auto]">
-            <div className="flex flex-col">
-              <b>{entry.number}번</b>
-              <span className="text-xs text-muted">
-                {texts[entry.id].length}자 · {utf8Bytes(texts[entry.id])}바이트
-              </span>
+          <Card key={entry.id} className="p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <b>{entry.number}번 학생</b>
+                <span className="rounded-lg bg-primary-soft px-2 py-1 text-xs font-semibold text-primary-dark">
+                  {texts[entry.id].length}자 · {utf8Bytes(texts[entry.id])}바이트
+                </span>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="ghost" size="sm" onClick={() => onCopy(texts[entry.id])}>
+                  <Clipboard size={14} /> 복사
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busyId === entry.id}
+                  onClick={() => onRegenerate(entry)}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={busyId === entry.id ? "animate-spin-slow" : undefined}
+                  />
+                  {busyId === entry.id ? "생성 중" : "다시 생성"}
+                </Button>
+              </div>
             </div>
             <textarea
-              className="min-h-24 leading-relaxed"
+              className="mt-3 min-h-28 w-full resize-y border-0 bg-transparent p-0 text-sm leading-relaxed text-ink shadow-none focus:ring-0"
               value={texts[entry.id]}
               aria-label={`${entry.number}번 ${label}`}
               onChange={(event) => onChange(entry.id, event.target.value)}
             />
-            <div className="flex gap-2 sm:flex-col">
-              <Button variant="ghost" size="sm" onClick={() => onCopy(texts[entry.id])}>
-                <Clipboard size={14} /> 복사
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busyId === entry.id}
-                onClick={() => onRegenerate(entry)}
-              >
-                <RefreshCw
-                  size={14}
-                  className={busyId === entry.id ? "animate-spin-slow" : undefined}
-                />
-                {busyId === entry.id ? "생성 중" : "다시 생성"}
-              </Button>
-            </div>
-          </div>
+          </Card>
         ))}
     </div>
   );
