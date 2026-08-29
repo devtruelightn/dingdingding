@@ -1,0 +1,20 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 아주 나이스 팀 (dingdingding contributors)
+
+이 저장소의 문서(README.md, CONTRIBUTING.md, DEPLOYMENT_GUIDE.md,
+PRIVACY_NOTICE.md 및 functions/src/prompts/ 아래의 .md 프롬프트 문서)는
+크리에이티브 커먼즈 저작자표시 4.0 국제 라이선스에 따라 이용할 수 있습니다.
+
+- 라이선스 전문: https://creativecommons.org/licenses/by/4.0/legalcode.ko
+- 요약: https://creativecommons.org/licenses/by/4.0/deed.ko
+
+이용 조건: 저작자와 출처를 표시하고, 변경한 경우 그 사실을 밝히면
+복제·배포·변형·상업적 이용이 모두 허용됩니다.
+
+적용 범위에서 제외되는 자료
+- src/data/curriculum.json 및 curriculum-report.json 은 교육부가 공개한
+  「2022 개정 교육과정에 따른 성취수준」 자료에서 추출한 것으로, 원 저작물의
+  이용 조건을 따릅니다.
+- 아이콘(Lucide, ISC), 폰트(Pretendard, SIL OFL 1.1) 등 서드파티 자산은
+  각 라이선스를 따릅니다.

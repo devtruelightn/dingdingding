@@ -2,6 +2,7 @@
   "name": "pyeonghaeng-toktok",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "displayName": "아주 나이스",
   "engines": {
