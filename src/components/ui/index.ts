@@ -1,6 +1,6 @@
 export { Button, type ButtonProps } from "./Button";
 export { IconButton } from "./IconButton";
-export { Card } from "./Card";
+export { GlassPanel } from "./GlassPanel";
 export { Segmented } from "./Segmented";
 export { Switch } from "./Switch";
 export { Modal } from "./Modal";

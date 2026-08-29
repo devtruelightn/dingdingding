@@ -25,13 +25,13 @@ export function AssessmentPlanReview({ rows, setRows, limit }: AssessmentPlanRev
   const appliedCount = rows.filter((row) => row.confirmed && row.officialStandardCode).length;
 
   return (
-    <div className="mt-4 grid gap-2 rounded-xl border border-line bg-subtle p-4">
+    <div className="mt-3.5 grid gap-2 rounded-2xl border border-line bg-solid/60 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col">
           <b>분석 결과</b>
-          <span className="text-xs text-muted">{appliedCount}개 기준 적용 예정</span>
+          <span className="text-[11px] text-muted">{appliedCount}개 기준 적용 예정</span>
         </div>
-        <span className="text-xs text-muted">
+        <span className="text-[11px] text-muted">
           일치한 기준은 자동 적용됩니다. 원문이 다르면 오른쪽 버튼으로 포함 여부만 확인하세요.
         </span>
       </div>
@@ -41,36 +41,36 @@ export function AssessmentPlanReview({ rows, setRows, limit }: AssessmentPlanRev
           <article
             key={row.id}
             className={cn(
-              "grid gap-3 rounded-xl border p-4 md:grid-cols-[minmax(0,1fr)_minmax(230px,300px)]",
-              row.confirmed ? "border-primary bg-primary-soft" : "border-line bg-card opacity-70",
+              "grid gap-3 rounded-xl border p-3.5 md:grid-cols-[minmax(0,1fr)_minmax(230px,300px)]",
+              row.confirmed ? "border-primary bg-primary-soft/40" : "border-line bg-card opacity-70",
             )}
           >
             <div className="min-w-0">
               <div className="mb-2 flex items-center gap-2">
                 <b>업로드 {row.standardCode || "코드 없음"}</b>
-                <span className="text-xs text-muted">
+                <span className="text-[11px] text-muted">
                   {row.subject || "과목 확인"} · {row.area || "영역 확인"}
                 </span>
               </div>
               {row.uploadedStandardText && (
-                <p className="my-2 rounded-lg bg-subtle p-2 text-xs leading-relaxed">
-                  <strong className="mr-1.5 text-xs text-muted">학교 문구</strong>
+                <p className="my-1.5 rounded-lg bg-surface/50 p-2 text-[11px] leading-relaxed">
+                  <strong className="mr-1.5 text-[10px] text-muted">학교 문구</strong>
                   {row.uploadedStandardText}
                 </p>
               )}
               {row.officialStandardText && (
-                <p className="my-2 rounded-lg bg-success/10 p-2 text-xs leading-relaxed">
-                  <strong className="mr-1.5 text-xs text-muted">공식 원문</strong>
+                <p className="my-1.5 rounded-lg bg-success/10 p-2 text-[11px] leading-relaxed">
+                  <strong className="mr-1.5 text-[10px] text-muted">공식 원문</strong>
                   <b className="mr-1 text-success">{row.officialStandardCode}</b>
                   {row.officialStandardText}
                 </p>
               )}
-              <small className="mt-2 block text-xs leading-relaxed text-muted">{row.resolution}</small>
+              <small className="mt-2 block text-[11px] leading-relaxed text-muted">{row.resolution}</small>
             </div>
             <div className="flex flex-col gap-2">
               <span
                 className={cn(
-                  "self-start rounded-full px-2 py-1 text-xs font-bold",
+                  "self-start rounded-full px-2 py-1 text-[10px] font-extrabold",
                   row.status.includes("정확히")
                     ? "bg-success/15 text-success"
                     : row.officialStandardCode
@@ -81,10 +81,10 @@ export function AssessmentPlanReview({ rows, setRows, limit }: AssessmentPlanRev
                 {row.status}
               </span>
               {mismatch && row.suggestions.length > 0 && (
-                <label className="grid gap-1 text-xs text-muted">
+                <label className="grid gap-1 text-[10px] text-muted">
                   <span>공식 기준 선택</span>
                   <select
-                    className="w-full text-xs"
+                    className="w-full text-[11px]"
                     value={row.officialStandardCode}
                     onChange={(event) => updateCandidate(row, event.target.value)}
                   >
@@ -104,10 +104,10 @@ export function AssessmentPlanReview({ rows, setRows, limit }: AssessmentPlanRev
                 disabled={!row.officialStandardCode}
                 onClick={() => toggleRow(row)}
                 className={cn(
-                  "inline-flex min-h-9 items-center justify-center gap-2 rounded-full border px-4 text-xs font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-45",
+                  "inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-bold disabled:opacity-50",
                   row.confirmed
-                    ? "border-primary bg-primary text-on-primary"
-                    : "border-line bg-card text-muted hover:bg-subtle",
+                    ? "border-primary bg-primary text-white"
+                    : "border-line bg-card text-muted",
                 )}
               >
                 {row.confirmed ? <Check size={15} /> : <X size={15} />}
@@ -122,7 +122,7 @@ export function AssessmentPlanReview({ rows, setRows, limit }: AssessmentPlanRev
         );
       })}
       {typeof limit === "number" && rows.length > limit && (
-        <p className="text-center text-xs text-muted">
+        <p className="text-center text-[11px] text-muted">
           나머지 {rows.length - limit}개 항목도 이 화면에서 이어서 확인할 수 있습니다.
         </p>
       )}

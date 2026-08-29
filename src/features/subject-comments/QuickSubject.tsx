@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Clipboard, Download, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
 import { CurriculumPicker } from "@/components/curriculum/CurriculumPicker";
 import { CurriculumUnavailable } from "@/components/curriculum/CurriculumUnavailable";
-import { Button, Card, PageHeading, Segmented } from "@/components/ui";
+import { Button, GlassPanel, PageHeading, Segmented } from "@/components/ui";
 import {
   AssessmentPlanStart,
   type PlanSetupMode,
@@ -318,7 +318,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
         description="학생 명단 없이 성취기준별 문장 묶음을 만듭니다."
         icon={WandSparkles}
       />
-      <Card>
+      <GlassPanel>
         <AssessmentPlanStart
           mode={planMode}
           setMode={setPlanMode}
@@ -336,12 +336,12 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
         {planMode !== "choose" && (planMode === "manual" || planStandards.length > 0) && (
           <div className="mt-6 border-t border-line pt-6">
             <div className="mb-3 flex items-center gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-on-primary">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-extrabold text-white">
                 2
               </span>
               <div>
                 <b>평가 내용 설정</b>
-                <small className="block text-xs text-muted">
+                <small className="block text-[11px] text-muted">
                   {planMode === "plan"
                     ? "평가계획에서 불러온 항목을 확인하세요."
                     : "학년·과목·평가영역·성취기준을 직접 선택하세요."}
@@ -349,8 +349,8 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
               </div>
             </div>
             {planMode === "plan" ? (
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold">업로드된 평가항목</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-extrabold">업로드된 평가항목</span>
                 <select
                   value={standardId}
                   onChange={(event) => {
@@ -366,7 +366,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
                     </option>
                   ))}
                 </select>
-                <small className="text-xs text-primary-dark">
+                <small className="text-[11px] text-primary-dark">
                   {grade}학년 · {subject} · {area} 자동 설정됨
                 </small>
               </label>
@@ -378,12 +378,12 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
             )}
 
             <div className="mt-6 mb-3 flex items-center gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-on-primary">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-extrabold text-white">
                 3
               </span>
               <div>
                 <b>평가 단계 설정</b>
-                <small className="block text-xs text-muted">
+                <small className="block text-[11px] text-muted">
                   학교에서 사용하는 3·4·5단계 중 하나를 고르세요.
                 </small>
               </div>
@@ -397,18 +397,18 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
             />
 
             <div className="mt-5 flex flex-col gap-4 border-t border-line pt-5 sm:flex-row sm:items-end sm:justify-between">
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold">문장 길이</span>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-extrabold">문장 길이</span>
                 <select value={length} onChange={(event) => setLength(event.target.value)}>
                   {lengthOptions.map((option) => (
                     <option key={option}>{option}</option>
                   ))}
                 </select>
               </label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {levels.map((level) => (
-                  <label key={level} className="flex min-w-[90px] flex-col gap-2">
-                    <span className="text-xs font-bold">{level}</span>
+                  <label key={level} className="flex min-w-[90px] flex-col gap-1.5">
+                    <span className="text-xs font-extrabold">{level}</span>
                     <input
                       type="number"
                       min={0}
@@ -425,7 +425,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
             </div>
 
             <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="flex items-center gap-2 text-xs text-success">
+              <p className="flex items-center gap-1.5 text-xs text-success">
                 <ShieldCheck size={16} /> 공식 성취수준 원문만 교육내용 근거로 사용합니다.
               </p>
               <Button variant="primary" size="lg" disabled={!standard} onClick={() => void generate()}>
@@ -434,7 +434,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
             </div>
           </div>
         )}
-      </Card>
+      </GlassPanel>
 
       {performanceNumbers.length > 0 && (
         <section className="mt-6">
@@ -482,7 +482,7 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
           <div
             role="tablist"
             aria-label="평가단계별 결과"
-            className="mb-4 flex flex-wrap gap-1 rounded-full border border-line bg-subtle p-1"
+            className="mb-4 flex flex-wrap gap-2 rounded-2xl border border-line bg-primary-soft/40 p-1.5"
           >
             {resultLevels.map((level) => (
               <button
@@ -491,14 +491,14 @@ export function QuickSubject({ profile, toast, savedPlan, onSavePlan }: QuickSub
                 aria-selected={activeResultLevel === level}
                 onClick={() => setActiveResultLevel(level)}
                 className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-all duration-150",
+                  "flex min-h-[42px] items-center gap-2 rounded-xl border px-4 font-semibold",
                   activeResultLevel === level
-                    ? "border-line bg-card text-primary-dark shadow-soft"
-                    : "border-transparent text-muted hover:text-ink",
+                    ? "border-primary/40 bg-solid text-primary-dark shadow-sm"
+                    : "border-transparent text-muted",
                 )}
               >
                 <span>{level}</span>
-                <b className="grid min-w-6 place-items-center rounded-full bg-primary-soft px-2 text-xs text-primary-dark">
+                <b className="grid min-w-[23px] place-items-center rounded-full bg-solid px-1.5 text-[11px] text-primary-dark">
                   {results.filter((item) => item.schoolLevel === level).length}
                 </b>
               </button>

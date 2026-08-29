@@ -4,9 +4,9 @@
  * 미리 선택된 것처럼 보이지 않게 한다. 크기는 사용하는 쪽에서 덧붙인다.
  */
 export const choiceCardClass =
-  "group lift flex flex-col items-center justify-center rounded-3xl border border-line bg-card shadow-soft hover:border-primary/45";
+  "group flex flex-col items-center justify-center rounded-3xl border-2 border-primary/20 bg-card shadow-sm transition hover:-translate-y-1.5 hover:border-primary hover:shadow-lg";
 
 export const choiceBadgeClass =
-  "grid place-items-center rounded-3xl bg-gradient-to-br from-primary-soft to-accent-soft text-primary transition-all duration-200 group-hover:from-primary group-hover:to-primary-dark group-hover:text-white group-hover:shadow-brand";
+  "grid place-items-center rounded-3xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-white";
 
 export const choiceLabelClass = "tracking-tight transition-colors group-hover:text-primary-dark";

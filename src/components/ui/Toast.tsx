@@ -5,9 +5,9 @@ export function Toast({ message }: { message: string }) {
   return (
     <div
       role="status"
-      className="fixed bottom-6 left-1/2 z-[110] flex max-w-[min(560px,calc(100%-2rem))] -translate-x-1/2 items-center gap-3 rounded-full border border-ink bg-ink px-5 py-3 text-sm text-card shadow-lift [animation:toast-in_.2s_ease-out]"
+      className="fixed bottom-6 left-1/2 z-[110] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-[#262139] px-4 py-3 text-white shadow-lg [animation:toast-in_.2s_ease-out]"
     >
-      <Check size={16} className="shrink-0" />
+      <Check size={17} />
       {message}
     </div>
   );

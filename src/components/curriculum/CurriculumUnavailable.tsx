@@ -9,8 +9,8 @@ import type { SchoolStage } from "@/types";
 export function CurriculumUnavailable({ schoolLevel }: { schoolLevel: SchoolStage }) {
   const label = schoolStageLabel[schoolLevel];
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-subtle p-7 text-center">
-      <span className="grid size-12 place-items-center rounded-xl bg-primary-soft text-primary-dark">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-solid/50 p-7 text-center">
+      <span className="grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary-dark">
         <Hourglass size={20} />
       </span>
       <b className="text-base">{label} 성취기준 데이터는 준비 중입니다</b>

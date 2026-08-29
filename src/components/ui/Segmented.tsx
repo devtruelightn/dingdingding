@@ -8,7 +8,6 @@ interface SegmentedProps<T extends string | number> {
   renderLabel?: (option: T) => string;
 }
 
-/** 2~4개의 배타적 선택지를 한 줄로 보여주는 탭 컨트롤. */
 export function Segmented<T extends string | number>({
   options,
   value,
@@ -18,7 +17,7 @@ export function Segmented<T extends string | number>({
 }: SegmentedProps<T>) {
   return (
     <div
-      className="inline-flex rounded-full border border-line bg-subtle p-1"
+      className="inline-flex rounded-2xl bg-primary-soft/60 p-1"
       role="tablist"
       aria-label={label}
     >
@@ -30,9 +29,9 @@ export function Segmented<T extends string | number>({
           aria-selected={value === option}
           onClick={() => onChange(option)}
           className={cn(
-            "min-h-9 min-w-[88px] rounded-full px-4 text-sm font-semibold transition-all duration-150",
+            "min-h-[38px] min-w-[86px] rounded-xl px-3 text-sm font-semibold transition-colors",
             value === option
-              ? "bg-card text-primary-dark shadow-soft"
+              ? "bg-solid text-primary-dark shadow-sm"
               : "text-muted hover:text-ink",
           )}
         >

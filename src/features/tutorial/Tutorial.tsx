@@ -14,9 +14,9 @@ export function Tutorial({ onClose }: { onClose: (hideForever: boolean) => void 
 
   return (
     <Modal labelledBy="tutorial-title">
-      <section className="w-full max-w-[560px] rounded-2xl border border-line bg-card p-8 text-center shadow-lift">
+      <section className="w-full max-w-[560px] rounded-3xl border border-line bg-solid p-6 text-center shadow-2xl">
         <div className="flex items-center justify-between">
-          <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
+          <span className="rounded-full bg-primary-soft px-2.5 py-1.5 text-[11px] font-extrabold text-primary-dark">
             {step + 1} / {tutorialSteps.length}
           </span>
           <IconButton aria-label="튜토리얼 닫기" onClick={() => onClose(false)}>
@@ -24,7 +24,7 @@ export function Tutorial({ onClose }: { onClose: (hideForever: boolean) => void 
           </IconButton>
         </div>
         <div
-          className="mx-auto my-6 grid size-24 place-items-center rounded-3xl bg-gradient-to-br from-primary-soft to-accent-soft text-5xl shadow-soft"
+          className="mx-auto my-4 grid size-[92px] place-items-center rounded-3xl bg-primary-soft text-5xl"
           aria-hidden
         >
           {emoji}
@@ -32,9 +32,9 @@ export function Tutorial({ onClose }: { onClose: (hideForever: boolean) => void 
         <h2 id="tutorial-title" className="text-2xl font-bold">
           {title}
         </h2>
-        <p className="mx-auto my-4 min-h-14 max-w-[440px] text-sm leading-relaxed text-muted">{body}</p>
+        <p className="mx-auto my-3 min-h-[56px] max-w-[440px] leading-relaxed text-muted">{body}</p>
         <div
-          className="my-4 flex justify-center gap-2"
+          className="my-4 flex justify-center gap-1.5"
           aria-label={`전체 ${tutorialSteps.length}단계 중 ${step + 1}단계`}
         >
           {tutorialSteps.map((_, index) => (
@@ -47,7 +47,7 @@ export function Tutorial({ onClose }: { onClose: (hideForever: boolean) => void 
             />
           ))}
         </div>
-        <div className="flex justify-between gap-3">
+        <div className="flex justify-between gap-2.5">
           <Button variant="ghost" onClick={() => (step ? setStep(step - 1) : onClose(false))}>
             <ChevronLeft size={17} /> {step ? "이전" : "건너뛰기"}
           </Button>

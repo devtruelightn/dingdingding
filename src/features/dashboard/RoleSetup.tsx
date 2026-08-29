@@ -30,7 +30,7 @@ export function RoleSetup({
   return (
     <div className="mx-auto w-full max-w-[1400px]">
       <button
-        className="mb-7 inline-flex items-center gap-2 text-base font-semibold text-muted transition-colors hover:text-primary-dark"
+        className="mb-7 inline-flex items-center gap-1.5 text-base font-semibold text-muted transition-colors hover:text-primary-dark"
         onClick={onBack}
       >
         <ChevronLeft size={20} /> {schoolStageLabel[schoolLevel]}
@@ -51,10 +51,10 @@ export function RoleSetup({
             aria-pressed={grade === item}
             onClick={() => onSelectGrade(item)}
             className={cn(
-              "min-h-14 min-w-32 rounded-lg border px-6 text-lg font-semibold transition-colors duration-150",
+              "min-h-[66px] min-w-[130px] rounded-2xl border-2 px-7 text-xl font-bold transition-colors",
               grade === item
-                ? "border-primary bg-primary text-on-primary"
-                : "border-line bg-subtle text-muted hover:border-primary/40 hover:text-primary-dark",
+                ? "border-primary bg-primary text-white shadow-sm"
+                : "border-line bg-solid/60 text-muted hover:border-primary/40 hover:text-primary-dark",
             )}
           >
             {item}학년

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Eye, Palette, Settings, ShieldCheck, Trash2 } from "lucide-react";
-import { Button, Card, PageHeading, Switch } from "@/components/ui";
+import { Button, GlassPanel, PageHeading, Switch } from "@/components/ui";
 import { clearLocalRosters } from "@/lib/local-db";
 import { cn } from "@/lib/cn";
 import type { Theme } from "@/types";
@@ -67,12 +67,12 @@ export function SettingsView({
         description="화면 테마, 접근성, 실명 저장 정책을 관리합니다."
         icon={Settings}
       />
-      <div className="grid gap-4">
-        <Card className="grid grid-cols-[40px_1fr] gap-3">
+      <div className="grid gap-3.5">
+        <GlassPanel className="grid grid-cols-[40px_1fr] gap-3">
           <Palette className="text-primary" />
           <div>
             <h2 className="text-lg font-bold">배경 테마</h2>
-            <p className="mb-4 mt-1 text-xs text-muted">
+            <p className="mb-3.5 mt-1 text-xs text-muted">
               계정 연결 후에는 다른 기기에도 설정이 유지됩니다.
             </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -82,14 +82,12 @@ export function SettingsView({
                   type="button"
                   onClick={() => setTheme(item)}
                   className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-full border px-4 text-xs transition-colors duration-150",
-                    theme === item
-                      ? "border-primary bg-primary-soft font-semibold text-primary-dark"
-                      : "border-line bg-card hover:bg-subtle",
+                    "flex min-h-[45px] items-center gap-2 rounded-xl border px-2.5 text-[11px]",
+                    theme === item ? "border-primary bg-primary-soft" : "border-line bg-solid/60",
                   )}
                 >
                   <span
-                    className="size-4 rounded-full border border-line"
+                    className="size-[17px] rounded-md"
                     style={{ background: themeSwatch[item] }}
                   />
                   {themeNames[item]}
@@ -98,14 +96,14 @@ export function SettingsView({
               ))}
             </div>
           </div>
-        </Card>
+        </GlassPanel>
 
-        <Card className="grid grid-cols-[40px_1fr] gap-3">
+        <GlassPanel className="grid grid-cols-[40px_1fr] gap-3">
           <ShieldCheck className="text-primary" />
           <div>
             <h2 className="text-lg font-bold">실명 저장 정책</h2>
-            <p className="mb-4 mt-1 text-xs text-muted">기본값은 ‘실명 클라우드 비저장’입니다.</p>
-            <div className="flex items-center justify-between gap-3 border-t border-line py-3">
+            <p className="mb-3.5 mt-1 text-xs text-muted">기본값은 ‘실명 클라우드 비저장’입니다.</p>
+            <div className="flex items-center justify-between gap-2.5 border-t border-line py-3">
               <div>
                 <b>실명 클라우드 저장</b>
                 <small className="block text-muted">
@@ -120,31 +118,31 @@ export function SettingsView({
               <Trash2 size={16} /> 현재 기기의 로컬 실명 삭제
             </Button>
           </div>
-        </Card>
+        </GlassPanel>
 
-        <Card className="grid grid-cols-[40px_1fr] gap-3">
+        <GlassPanel className="grid grid-cols-[40px_1fr] gap-3">
           <Eye className="text-primary" />
           <div>
             <h2 className="text-lg font-bold">접근성</h2>
-            <p className="mb-4 mt-1 text-xs text-muted">모션과 투명 효과를 줄일 수 있습니다.</p>
-            <div className="flex items-center justify-between border-t border-line py-3">
-              <span className="text-sm">모션 줄이기</span>
-              <Switch
+            <p className="mb-3.5 mt-1 text-xs text-muted">모션과 투명 효과를 줄일 수 있습니다.</p>
+            <label className="flex items-center justify-between border-t border-line py-3">
+              <span>모션 줄이기</span>
+              <input
+                type="checkbox"
                 checked={reduceMotion}
-                onChange={() => setReduceMotion(!reduceMotion)}
-                label="모션 줄이기"
+                onChange={(event) => setReduceMotion(event.target.checked)}
               />
-            </div>
-            <div className="flex items-center justify-between border-t border-line py-3">
-              <span className="text-sm">투명 효과 줄이기</span>
-              <Switch
+            </label>
+            <label className="flex items-center justify-between border-t border-line py-3">
+              <span>투명 효과 줄이기</span>
+              <input
+                type="checkbox"
                 checked={reduceTransparency}
-                onChange={() => setReduceTransparency(!reduceTransparency)}
-                label="투명 효과 줄이기"
+                onChange={(event) => setReduceTransparency(event.target.checked)}
               />
-            </div>
+            </label>
           </div>
-        </Card>
+        </GlassPanel>
       </div>
     </div>
   );

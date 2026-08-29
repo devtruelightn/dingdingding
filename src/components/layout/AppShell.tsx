@@ -52,6 +52,7 @@ export function AppShell() {
   const [tutorial, setTutorial] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "offline">("saved");
   const [savedPlan, setSavedPlan] = useState<SavedAssessmentPlan | null>(null);
 
   const authError = useCallback((message: string) => toast(message), [toast]);
@@ -114,8 +115,9 @@ export function AppShell() {
     setWorkMode(workModeForRole(role));
   };
 
-  /** 상단 저장 버튼을 대신하는 조용한 자동 저장. 화면에 아무것도 알리지 않는다. */
+  /** 상단 저장 버튼을 대신하는 조용한 자동 저장. 알림 없이 상태 점만 바꾼다. */
   const autosave = async () => {
+    setSaveState("saving");
     saveWorkspaceSnapshot({ view, theme, privacy, ...profile, updatedAt: Date.now() });
     if (user && isFirebaseConfigured) {
       try {
@@ -126,9 +128,11 @@ export function AppShell() {
           savedAssessmentPlan: savedPlan,
         });
       } catch {
+        setSaveState("offline");
         return;
       }
     }
+    setSaveState(navigator.onLine ? "saved" : "offline");
   };
 
   const persistAssessmentPlan = useCallback(
@@ -261,6 +265,7 @@ export function AppShell() {
       )}
       <main className="min-w-0 lg:col-start-2">
         <Topbar
+          saveState={saveState}
           onOpenMenu={() => setMobileNav(true)}
           onOpenSettings={() => navigate("settings")}
           onOpenTutorial={() => setTutorial(true)}

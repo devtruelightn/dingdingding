@@ -41,17 +41,17 @@ export function RosterInput({ students, setStudents, toast }: RosterInputProps) 
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-5 md:grid-cols-2">
       <div>
-        <label className="text-xs font-bold" htmlFor="roster-paste">
+        <label className="text-xs font-extrabold" htmlFor="roster-paste">
           이름 붙여넣기
-          <small className="mt-1 block font-normal text-xs text-muted">
+          <small className="mt-0.5 block font-normal text-[10px] text-muted">
             이름만 한 줄에 한 명씩 입력하면 1번부터 자동으로 번호가 붙어요.
           </small>
         </label>
         <textarea
           id="roster-paste"
-          className="mt-2 min-h-52 w-full font-mono"
+          className="mt-2 min-h-[210px] w-full font-mono"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={"김서윤\n김채원\n박새봄"}
@@ -72,23 +72,23 @@ export function RosterInput({ students, setStudents, toast }: RosterInputProps) 
           </Button>
         </div>
       </div>
-      <div className="min-h-64 rounded-xl border border-line bg-subtle p-6">
+      <div className="min-h-[265px] rounded-2xl border border-line bg-solid/50 p-4">
         <div className="flex justify-between">
           <b>명단 미리보기</b>
-          <span className="text-xs text-muted">{students.length} / 40명</span>
+          <span className="text-[11px] text-muted">{students.length} / 40명</span>
         </div>
         {students.length ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {students.map((student) => (
               <span
                 key={student.id}
-                className="inline-flex min-h-9 items-center gap-2 rounded-full border border-line bg-card px-3 text-xs shadow-soft"
+                className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl border border-line bg-solid px-2.5 text-xs"
               >
                 <b className="text-primary">{student.number}</b> {student.name}
                 <button
                   aria-label={`${student.name} 삭제`}
                   onClick={() => setStudents(students.filter((item) => item.id !== student.id))}
-                  className="grid size-6 place-items-center rounded-md bg-primary-soft text-primary-dark transition-colors duration-150 hover:bg-primary/20"
+                  className="grid size-[22px] place-items-center rounded-md bg-primary-soft"
                 >
                   <X size={13} />
                 </button>
@@ -96,7 +96,7 @@ export function RosterInput({ students, setStudents, toast }: RosterInputProps) 
             ))}
           </div>
         ) : (
-          <div className="grid min-h-32 place-items-center text-xs text-muted">
+          <div className="grid min-h-[130px] place-items-center text-xs text-muted">
             명단을 적용하면 여기에 표시됩니다.
           </div>
         )}
