@@ -20,7 +20,7 @@ import {
   logout,
   saveWorkspace,
 } from "@/lib/firebase";
-import { viewForRole, workModeForRole } from "@/lib/school";
+import { defaultWorkMode, viewForRole } from "@/lib/school";
 import {
   isSavedAssessmentPlan,
   loadStoredAssessmentPlan,
@@ -39,7 +39,7 @@ export function AppShell() {
   const { stage, profile, selectSchoolLevel, selectGrade, selectRole, resume, restart } =
     useOnboarding();
   const [view, setView] = useState<View>("behavior");
-  const [workMode, setWorkMode] = useState<WorkMode>("quick");
+  const [workMode, setWorkMode] = useState<WorkMode>(defaultWorkMode());
   const { theme, setTheme, reduceMotion, setReduceMotion, reduceTransparency, setReduceTransparency } =
     useTheme();
   const { message: toastMessage, toast } = useToast();
@@ -64,7 +64,7 @@ export function AppShell() {
     if (!saved) return;
     resume(saved);
     setView(viewForRole(saved.role));
-    setWorkMode(workModeForRole(saved.role));
+    setWorkMode(defaultWorkMode());
   }, [resume]);
 
   // 로그인 시 클라우드에 저장된 평가계획을 병합한다.
@@ -106,7 +106,7 @@ export function AppShell() {
   const enterWorkspace = (role: TeacherRole) => {
     selectRole(role);
     setView(viewForRole(role));
-    setWorkMode(workModeForRole(role));
+    setWorkMode(defaultWorkMode());
   };
 
   /** 상단 저장 버튼을 대신하는 조용한 자동 저장. 화면에 아무것도 알리지 않는다. */

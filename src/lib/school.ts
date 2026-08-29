@@ -28,6 +28,8 @@ export const roleLabel = (schoolLevel: SchoolStage, role: TeacherRole) =>
 export const viewForRole = (role: TeacherRole): View =>
   role === "homeroom" ? "behavior" : "subject";
 
-/** 담임은 우리 반 전체를, 전담과목·교과는 빠른 생성을 기본값으로 둔다. */
-export const workModeForRole = (role: TeacherRole): WorkMode =>
-  role === "homeroom" ? "class" : "quick";
+/**
+ * 역할과 무관하게 우리 반 화면으로 들어간다. 전담과목·교과도 담임과 같은
+ * 평어·과세특 흐름을 쓰므로 역할에 따라 화면이 갈리지 않는다.
+ */
+export const defaultWorkMode = (): WorkMode => "class";
